@@ -64,6 +64,16 @@ npm run format
 2. Click the **Compare** button to view the diff
 3. Click **Edit** to return to editing mode
 
+## Libraries
+
+### diff-match-patch
+
+This project uses the [diff-match-patch](https://github.com/google/diff-match-patch) library by Google for computing text differences.
+
+- **License**: Apache License 2.0
+- **Source**: https://github.com/google/diff-match-patch
+- **Usage**: The library provides the core diffing algorithm that powers the line-level and character-level comparison features.
+
 ## License
 
 MIT
