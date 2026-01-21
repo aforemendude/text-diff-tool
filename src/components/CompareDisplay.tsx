@@ -109,16 +109,20 @@ interface CharDiffSpanProps {
 
 function CharDiffSpan({ charDiff, side }: CharDiffSpanProps) {
   const getClass = () => {
-    if (charDiff.type === 'equal') {
-      return 'char-diff';
-    }
     if (charDiff.type === 'delete' && side === 'original') {
       return 'char-diff char-diff--delete';
     }
     if (charDiff.type === 'insert' && side === 'modified') {
       return 'char-diff char-diff--insert';
     }
-    return 'char-diff';
+    // Markers on opposite side
+    if (charDiff.type === 'equal' && side === 'original') {
+      return 'char-diff char-diff--equal char-diff--insert-marker';
+    }
+    if (charDiff.type === 'equal' && side === 'modified') {
+      return 'char-diff char-diff--equal char-diff--delete-marker';
+    }
+    throw new Error('Invalid charDiff type');
   };
 
   return <span className={getClass()}>{charDiff.text}</span>;

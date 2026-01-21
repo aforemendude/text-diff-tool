@@ -48,7 +48,7 @@ function App() {
 
     const { chars1, chars2, lineArray } = dmp.diff_linesToChars_(
       lineText1,
-      lineText2
+      lineText2,
     );
     const lineDiffs = dmp.diff_main(chars1, chars2, false);
     dmp.diff_charsToLines_(lineDiffs, lineArray);

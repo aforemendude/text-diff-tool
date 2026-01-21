@@ -398,6 +398,16 @@ textarea::-webkit-scrollbar-thumb:hover {
   border-radius: 2px;
 }
 
+/* Markers on the opposite side - vertical line indicators */
+/* Only show the marker line when followed by equal text */
+.char-diff--insert-marker:has(+ .char-diff--equal) {
+  box-shadow: inset -2px 0 0 0 #01ce01;
+}
+
+.char-diff--delete-marker:has(+ .char-diff--equal) {
+  box-shadow: inset -2px 0 0 0 #ff5353;
+}
+
 /* Scrollbar styling for compare display */
 .compare-display__content::-webkit-scrollbar {
   width: 12px;
