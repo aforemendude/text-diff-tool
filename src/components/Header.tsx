@@ -8,7 +8,7 @@ function Header({ isCompareMode, onToggleMode }: HeaderProps) {
     <header className="header">
       <div className="brand">
         <div className="logo-container">
-          <img className="logo-icon" src="/logo.svg" alt="TextDiffTool Logo" />
+          <img className="logo-icon" src="logo.svg" alt="TextDiffTool Logo" />
         </div>
         <h1>
           <span className="brand-text">Text</span>
