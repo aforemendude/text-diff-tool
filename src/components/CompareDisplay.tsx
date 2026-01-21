@@ -20,25 +20,21 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
 
   return (
     <div className="compare-display">
-      <div className="diff-panel diff-panel--original">
-        <div className="diff-panel__header">
+      <div className="compare-display__header">
+        <div className="compare-display__header-cell">
           <h3>Original</h3>
         </div>
-        <div className="diff-panel__content">
-          {originalLines.map((line, index) => (
-            <DiffLine key={index} line={line} side="original" />
-          ))}
-        </div>
-      </div>
-      <div className="diff-panel diff-panel--modified">
-        <div className="diff-panel__header">
+        <div className="compare-display__header-cell">
           <h3>Modified</h3>
         </div>
-        <div className="diff-panel__content">
-          {modifiedLines.map((line, index) => (
-            <DiffLine key={index} line={line} side="modified" />
-          ))}
-        </div>
+      </div>
+      <div className="compare-display__content">
+        {originalLines.map((line, index) => (
+          <div key={index} className="diff-row">
+            <DiffLine line={line} side="original" />
+            <DiffLine line={modifiedLines[index]} side="modified" />
+          </div>
+        ))}
       </div>
     </div>
   );
