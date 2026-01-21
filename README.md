@@ -1,68 +1,73 @@
-# Text Diff Tool
+# TextDiffTool
 
-A modern, lightweight web application for comparing text differences, focusing on simplicity and a premium user experience.
+A modern, browser-based text comparison tool that highlights differences between two text inputs with line-level and character-level diff visualization.
 
-## ✨ Features
+## Features
 
-- **Split-View Interface**: Side-by-side comparison for "Original" and "Modified" text.
-- **Modern Design**: Clean aesthetics using the Inter font, subtle shadows, and a responsive layout.
-- **Developer Experience**: Powered by Vite for instant HMR and fast builds.
-- **Visual Feedback**: Clear distinctions between read-only and editable panes.
+- **Side-by-side comparison** – View original and modified text in a split display
+- **Line-level diffing** – Highlights added, removed, and modified lines
+- **Character-level diffing** – Shows exact character changes within modified lines
+- **Edit/Compare toggle** – Switch between editing text and viewing differences
+- **Static deployment** – Builds to static files for easy hosting (e.g., GitHub Pages)
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Build Tool**: [Vite](https://vitejs.dev/)
-- **Frontend**: HTML5, CSS3, JavaScript (ES Modules)
-- **Dependencies**: React (Configured for future expansion)
-- **Code Formatter**: Prettier
+- **React 19** with TypeScript
+- **Vite** for fast development and building
+- **diff-match-patch** for diff computation
+- **Prettier** for code formatting
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Node.js (Latest LTS recommended)
-- npm or yarn
+- Node.js (v24 or higher recommended)
+- npm
 
 ### Installation
 
-1. Clone the repository:
-
-   ```bash
-   git clone <repository-url>
-   cd text-diff-tool
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
 ### Development
 
-Start the local development server:
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173` (or the port shown in your terminal).
+### Build
 
-### Production Build
-
-Build the application for production:
+Build for production (outputs to `docs/` for GitHub Pages):
 
 ```bash
 npm run build
 ```
 
-To preview the production build locally:
+Preview the production build:
 
 ```bash
 npm run preview
 ```
 
-## 📝 Roadmap
+### Format Code
 
-- [ ] Implement text difference algorithm (Myers' diff algorithm or similar).
-- [ ] Add syntax highlighting or diff coloring.
-- [ ] Migrate UI components to React for better state management.
+```bash
+npm run format
+```
+
+## Usage
+
+1. Enter or paste text in the **Original** and **Modified** text areas
+2. Click the **Compare** button to view the diff
+3. Click **Edit** to return to editing mode
+
+## License
+
+MIT
+
+## AI Use Disclosure
+
+This project was built with the assistance of AI coding tools. AI was used to help with code generation, documentation, and development workflow optimization.
