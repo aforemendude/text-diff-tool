@@ -1,10 +1,27 @@
+import { useState, ReactElement } from 'react';
 import { DiffResult, LineDiff, CharDiff } from '../App';
 
 interface CompareDisplayProps {
   diffResult: DiffResult | null;
 }
 
+const CONTEXT_LINES = 3; // Number of unchanged lines to show around changes
+
+// Types for grouped display
+type DisplaySection =
+  | { type: 'lines'; startIndex: number; endIndex: number }
+  | {
+      type: 'collapsed';
+      startIndex: number;
+      endIndex: number;
+      lineCount: number;
+    };
+
 function CompareDisplay({ diffResult }: CompareDisplayProps) {
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(),
+  );
+
   if (!diffResult) {
     return (
       <div className="compare-display compare-display--empty">
@@ -18,6 +35,76 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
 
   const { originalLines, modifiedLines } = diffResult;
 
+  // Find which lines have changes
+  const isChangedLine = (index: number): boolean => {
+    const origLine = originalLines[index];
+    const modLine = modifiedLines[index];
+    return (
+      origLine?.type !== 'equal' ||
+      modLine?.type !== 'equal' ||
+      origLine?.lineNumber === -1 ||
+      modLine?.lineNumber === -1
+    );
+  };
+
+  // Build sections for display
+  const buildSections = (): DisplaySection[] => {
+    const sections: DisplaySection[] = [];
+    const totalLines = originalLines.length;
+
+    // Mark lines that should be visible (changed or within context)
+    const visibleLines = new Set<number>();
+    for (let i = 0; i < totalLines; i++) {
+      if (isChangedLine(i)) {
+        // Add this line and context around it
+        for (
+          let j = Math.max(0, i - CONTEXT_LINES);
+          j <= Math.min(totalLines - 1, i + CONTEXT_LINES);
+          j++
+        ) {
+          visibleLines.add(j);
+        }
+      }
+    }
+
+    let i = 0;
+    while (i < totalLines) {
+      if (visibleLines.has(i)) {
+        // Start of visible section
+        const startIndex = i;
+        while (i < totalLines && visibleLines.has(i)) {
+          i++;
+        }
+        sections.push({ type: 'lines', startIndex, endIndex: i - 1 });
+      } else {
+        // Start of collapsed section
+        const startIndex = i;
+        while (i < totalLines && !visibleLines.has(i)) {
+          i++;
+        }
+        const endIndex = i - 1;
+        const lineCount = endIndex - startIndex + 1;
+        sections.push({ type: 'collapsed', startIndex, endIndex, lineCount });
+      }
+    }
+
+    return sections;
+  };
+
+  const sections = buildSections();
+
+  const toggleSection = (sectionKey: string) => {
+    setExpandedSections((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionKey)) {
+        newSet.delete(sectionKey);
+      } else {
+        newSet.add(sectionKey);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="compare-display">
       <div className="compare-display__header">
@@ -29,12 +116,60 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
         </div>
       </div>
       <div className="compare-display__content">
-        {originalLines.map((line, index) => (
-          <div key={index} className="diff-row">
-            <DiffLine line={line} side="original" />
-            <DiffLine line={modifiedLines[index]} side="modified" />
-          </div>
-        ))}
+        {sections.map((section) => {
+          const sectionKey = `${section.startIndex}-${section.endIndex}`;
+
+          if (
+            section.type === 'collapsed' &&
+            !expandedSections.has(sectionKey)
+          ) {
+            return (
+              <div
+                key={sectionKey}
+                className="diff-collapsed"
+                onClick={() => toggleSection(sectionKey)}
+              >
+                <span className="diff-collapsed__icon">⊕</span>
+                <span className="diff-collapsed__text">
+                  {section.lineCount} unchanged{' '}
+                  {section.lineCount === 1 ? 'line' : 'lines'} hidden
+                </span>
+              </div>
+            );
+          }
+
+          // Render lines (either regular section or expanded collapsed section)
+          const lines: ReactElement[] = [];
+          for (let idx = section.startIndex; idx <= section.endIndex; idx++) {
+            lines.push(
+              <div key={idx} className="diff-row">
+                <DiffLine line={originalLines[idx]} side="original" />
+                <DiffLine line={modifiedLines[idx]} side="modified" />
+              </div>,
+            );
+          }
+
+          // If this was a collapsed section that's now expanded, wrap with collapse button
+          if (section.type === 'collapsed') {
+            return (
+              <div key={sectionKey} className="diff-expanded-section">
+                <div
+                  className="diff-collapsed diff-collapsed--expanded"
+                  onClick={() => toggleSection(sectionKey)}
+                >
+                  <span className="diff-collapsed__icon">⊖</span>
+                  <span className="diff-collapsed__text">
+                    Collapse {section.lineCount} unchanged{' '}
+                    {section.lineCount === 1 ? 'line' : 'lines'}
+                  </span>
+                </div>
+                {lines}
+              </div>
+            );
+          }
+
+          return <div key={sectionKey}>{lines}</div>;
+        })}
       </div>
     </div>
   );

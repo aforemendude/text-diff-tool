@@ -19,10 +19,12 @@ export interface CharDiff {
   text: string;
 }
 
+// TODO: Minor rename/refactor: ErrorModalState -> ModalState
 interface ErrorModalState {
   isOpen: boolean;
   title: string;
   message: string;
+  variant?: 'error' | 'info';
 }
 
 // Recursively sort all keys in a JSON value
@@ -35,7 +37,8 @@ function sortJsonKeys(value: unknown): unknown {
     return value.map(sortJsonKeys);
   }
 
-  const sortedObj: Record<string, unknown> = {};
+  // Use Object.create(null) to avoid prototype pollution attacks
+  const sortedObj: Record<string, unknown> = Object.create(null);
   const keys = Object.keys(value as Record<string, unknown>).sort();
   for (const key of keys) {
     sortedObj[key] = sortJsonKeys((value as Record<string, unknown>)[key]);
@@ -56,15 +59,26 @@ function App() {
   });
 
   const closeErrorModal = () => {
-    setErrorModal({ isOpen: false, title: '', message: '' });
+    setErrorModal({ isOpen: false, title: '', message: '', variant: 'error' });
   };
 
   const handleToggleMode = () => {
     if (!isCompareMode) {
       // Switching to compare mode - compute diff
-      const success = computeDiff();
-      if (!success) {
+      const result = computeDiff();
+      if (result === 'error') {
         return; // Don't switch to compare mode if JSON parsing failed
+      }
+      if (result === 'identical') {
+        // Using the term "content" here since it can be either text or JSON
+        setErrorModal({
+          isOpen: true,
+          title: 'Identical Content',
+          message:
+            'The original and modified content are exactly the same. There are no differences to display.',
+          variant: 'info',
+        });
+        return; // Don't switch to compare mode if contents are identical
       }
     } else {
       // Switching back to edit mode
@@ -73,8 +87,8 @@ function App() {
     setIsCompareMode(!isCompareMode);
   };
 
-  // Returns true if diff was computed successfully, false if there was an error
-  const computeDiff = (): boolean => {
+  // Returns 'success', 'error', or 'identical'
+  const computeDiff = (): 'success' | 'error' | 'identical' => {
     let textToCompareOriginal = originalText;
     let textToCompareModified = modifiedText;
 
@@ -94,7 +108,7 @@ function App() {
           title: 'JSON Parse Error - Original Text',
           message: `Failed to parse the original text as JSON:\n\n${errorMessage}`,
         });
-        return false;
+        return 'error';
       }
 
       try {
@@ -111,8 +125,13 @@ function App() {
           title: 'JSON Parse Error - Modified Text',
           message: `Failed to parse the modified text as JSON:\n\n${errorMessage}`,
         });
-        return false;
+        return 'error';
       }
+    }
+
+    // Check if texts are identical
+    if (textToCompareOriginal === textToCompareModified) {
+      return 'identical';
     }
 
     const dmp = new diff_match_patch();
@@ -143,7 +162,7 @@ function App() {
       const text = diff[1];
       const lines = text
         .split('\n')
-        .filter((_, i, arr) => i < arr.length - 1 || _ !== '');
+        .filter((val, i, arr) => i < arr.length - 1 || val !== '');
 
       if (op === DIFF_EQUAL) {
         for (const line of lines) {
@@ -261,7 +280,7 @@ function App() {
       modifiedLines: processedModified,
     });
 
-    return true;
+    return 'success';
   };
 
   return (
@@ -286,6 +305,7 @@ function App() {
           title={errorModal.title}
           message={errorModal.message}
           onClose={closeErrorModal}
+          variant={errorModal.variant}
         />
       )}
     </div>

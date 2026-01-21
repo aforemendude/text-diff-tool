@@ -2,14 +2,18 @@ interface ModalProps {
   title: string;
   message: string;
   onClose: () => void;
+  variant?: 'error' | 'info';
 }
 
-function Modal({ title, message, onClose }: ModalProps) {
+function Modal({ title, message, onClose, variant = 'error' }: ModalProps) {
+  const titleClass =
+    variant === 'info' ? 'modal__title modal__title--info' : 'modal__title';
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
-          <h2 className="modal__title">{title}</h2>
+          <h2 className={titleClass}>{title}</h2>
           <button className="modal__close" onClick={onClose} aria-label="Close">
             ×
           </button>
