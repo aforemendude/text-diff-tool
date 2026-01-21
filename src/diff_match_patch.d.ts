@@ -56,6 +56,13 @@ declare class diff_match_patch {
 
   patch_toText(patches: diff_match_patch.patch_obj[]): string;
   patch_fromText(textline: string): diff_match_patch.patch_obj[];
+
+  // Internal helper methods for line mode diff
+  diff_linesToChars_(
+    text1: string,
+    text2: string,
+  ): { chars1: string; chars2: string; lineArray: string[] };
+  diff_charsToLines_(diffs: diff_match_patch.Diff[], lineArray: string[]): void;
 }
 
 declare namespace diff_match_patch {
