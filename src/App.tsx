@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './App.css';
-import { Header, TextAreas, CompareDisplay } from './components';
+import { Header, TextAreas, CompareDisplay, Modal } from './components';
 
 export interface DiffResult {
   originalLines: LineDiff[];
@@ -19,16 +19,53 @@ export interface CharDiff {
   text: string;
 }
 
+interface ErrorModalState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+}
+
+// Recursively sort all keys in a JSON value
+function sortJsonKeys(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(sortJsonKeys);
+  }
+
+  const sortedObj: Record<string, unknown> = {};
+  const keys = Object.keys(value as Record<string, unknown>).sort();
+  for (const key of keys) {
+    sortedObj[key] = sortJsonKeys((value as Record<string, unknown>)[key]);
+  }
+  return sortedObj;
+}
+
 function App() {
   const [originalText, setOriginalText] = useState('');
   const [modifiedText, setModifiedText] = useState('');
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
   const [isCompareMode, setIsCompareMode] = useState(false);
+  const [isJsonMode, setIsJsonMode] = useState(false);
+  const [errorModal, setErrorModal] = useState<ErrorModalState>({
+    isOpen: false,
+    title: '',
+    message: '',
+  });
+
+  const closeErrorModal = () => {
+    setErrorModal({ isOpen: false, title: '', message: '' });
+  };
 
   const handleToggleMode = () => {
     if (!isCompareMode) {
       // Switching to compare mode - compute diff
-      computeDiff();
+      const success = computeDiff();
+      if (!success) {
+        return; // Don't switch to compare mode if JSON parsing failed
+      }
     } else {
       // Switching back to edit mode
       setDiffResult(null);
@@ -36,11 +73,52 @@ function App() {
     setIsCompareMode(!isCompareMode);
   };
 
-  const computeDiff = () => {
+  // Returns true if diff was computed successfully, false if there was an error
+  const computeDiff = (): boolean => {
+    let textToCompareOriginal = originalText;
+    let textToCompareModified = modifiedText;
+
+    // If JSON mode is enabled, parse, sort keys, and re-stringify
+    if (isJsonMode) {
+      try {
+        const parsedOriginal = JSON.parse(originalText);
+        textToCompareOriginal = JSON.stringify(
+          sortJsonKeys(parsedOriginal),
+          null,
+          2,
+        );
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        setErrorModal({
+          isOpen: true,
+          title: 'JSON Parse Error - Original Text',
+          message: `Failed to parse the original text as JSON:\n\n${errorMessage}`,
+        });
+        return false;
+      }
+
+      try {
+        const parsedModified = JSON.parse(modifiedText);
+        textToCompareModified = JSON.stringify(
+          sortJsonKeys(parsedModified),
+          null,
+          2,
+        );
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+        setErrorModal({
+          isOpen: true,
+          title: 'JSON Parse Error - Modified Text',
+          message: `Failed to parse the modified text as JSON:\n\n${errorMessage}`,
+        });
+        return false;
+      }
+    }
+
     const dmp = new diff_match_patch();
 
-    const originalLines = originalText.split('\n');
-    const modifiedLines = modifiedText.split('\n');
+    const originalLines = textToCompareOriginal.split('\n');
+    const modifiedLines = textToCompareModified.split('\n');
 
     // Compute line-by-line diff
     const lineText1 = originalLines.join('\n');
@@ -182,11 +260,18 @@ function App() {
       originalLines: processedOriginal,
       modifiedLines: processedModified,
     });
+
+    return true;
   };
 
   return (
     <div className="layout">
-      <Header isCompareMode={isCompareMode} onToggleMode={handleToggleMode} />
+      <Header
+        isCompareMode={isCompareMode}
+        onToggleMode={handleToggleMode}
+        isJsonMode={isJsonMode}
+        onJsonModeChange={setIsJsonMode}
+      />
       {!isCompareMode && (
         <TextAreas
           originalText={originalText}
@@ -196,6 +281,13 @@ function App() {
         />
       )}
       {isCompareMode && <CompareDisplay diffResult={diffResult} />}
+      {errorModal.isOpen && (
+        <Modal
+          title={errorModal.title}
+          message={errorModal.message}
+          onClose={closeErrorModal}
+        />
+      )}
     </div>
   );
 }
