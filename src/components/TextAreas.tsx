@@ -16,9 +16,6 @@ function TextAreas({
       <div className="editor-pane">
         <div className="pane-header">
           <h2>Original</h2>
-          <div className="pane-tools">
-            <span className="badge">Read Only</span>
-          </div>
         </div>
         <div className="textarea-wrapper">
           <textarea
@@ -33,9 +30,6 @@ function TextAreas({
       <div className="editor-pane">
         <div className="pane-header">
           <h2>Modified</h2>
-          <div className="pane-tools">
-            <span className="badge">Editable</span>
-          </div>
         </div>
         <div className="textarea-wrapper">
           <textarea

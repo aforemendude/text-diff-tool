@@ -1,9 +1,8 @@
 interface HeaderProps {
-  onClear: () => void;
   onCompare: () => void;
 }
 
-function Header({ onClear, onCompare }: HeaderProps) {
+function Header({ onCompare }: HeaderProps) {
   return (
     <header className="header">
       <div className="brand">
@@ -28,10 +27,7 @@ function Header({ onClear, onCompare }: HeaderProps) {
           Text<span className="brand-accent">Diff</span>
         </h1>
       </div>
-      <div className="actions">
-        <button className="btn btn-secondary" onClick={onClear}>
-          Clear
-        </button>
+      <div className="header-center">
         <button
           id="compare-btn"
           className="btn btn-primary"
@@ -40,6 +36,7 @@ function Header({ onClear, onCompare }: HeaderProps) {
           Compare
         </button>
       </div>
+      <div className="header-spacer"></div>
     </header>
   );
 }

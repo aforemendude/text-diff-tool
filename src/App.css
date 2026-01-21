@@ -56,8 +56,6 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-width: 1920px;
-  margin: 0 auto;
   width: 100%;
 }
 
@@ -71,6 +69,7 @@ body {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  position: relative;
 }
 
 .brand {
@@ -106,9 +105,14 @@ h1 {
   color: var(--primary);
 }
 
-.actions {
-  display: flex;
-  gap: 0.75rem;
+.header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.header-spacer {
+  width: 100px; /* Match approximate brand width for balance */
 }
 
 /* Buttons */
@@ -182,15 +186,6 @@ h1 {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
-}
-
-.badge {
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  background-color: #f3f4f6;
-  color: var(--text-secondary);
-  border-radius: 99px;
-  font-weight: 500;
 }
 
 .textarea-wrapper {
