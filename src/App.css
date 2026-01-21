@@ -245,7 +245,7 @@ textarea::-webkit-scrollbar-thumb:hover {
   background-color: var(--border-light);
   flex: 1;
   overflow: hidden;
-  margin: 0 2rem 1.5rem;
+  margin: 1.5rem 2rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-card);
@@ -363,8 +363,8 @@ textarea::-webkit-scrollbar-thumb:hover {
 .diff-line__text {
   flex: 1;
   padding: 0 0.5rem;
-  white-space: pre;
-  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 /* Character-level diff highlighting */
