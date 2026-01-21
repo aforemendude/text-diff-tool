@@ -1,8 +1,9 @@
 interface HeaderProps {
-  onCompare: () => void;
+  isCompareMode: boolean;
+  onToggleMode: () => void;
 }
 
-function Header({ onCompare }: HeaderProps) {
+function Header({ isCompareMode, onToggleMode }: HeaderProps) {
   return (
     <header className="header">
       <div className="brand">
@@ -31,9 +32,9 @@ function Header({ onCompare }: HeaderProps) {
         <button
           id="compare-btn"
           className="btn btn-primary"
-          onClick={onCompare}
+          onClick={onToggleMode}
         >
-          Compare
+          {isCompareMode ? 'Edit' : 'Compare'}
         </button>
       </div>
       <div className="header-spacer"></div>

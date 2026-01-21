@@ -23,8 +23,20 @@ function App() {
   const [originalText, setOriginalText] = useState('');
   const [modifiedText, setModifiedText] = useState('');
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
+  const [isCompareMode, setIsCompareMode] = useState(false);
 
-  const handleCompare = () => {
+  const handleToggleMode = () => {
+    if (!isCompareMode) {
+      // Switching to compare mode - compute diff
+      computeDiff();
+    } else {
+      // Switching back to edit mode
+      setDiffResult(null);
+    }
+    setIsCompareMode(!isCompareMode);
+  };
+
+  const computeDiff = () => {
     const dmp = new diff_match_patch();
 
     const originalLines = originalText.split('\n');
@@ -174,14 +186,16 @@ function App() {
 
   return (
     <div className="layout">
-      <Header onCompare={handleCompare} />
-      <TextAreas
-        originalText={originalText}
-        modifiedText={modifiedText}
-        onOriginalChange={setOriginalText}
-        onModifiedChange={setModifiedText}
-      />
-      <CompareDisplay diffResult={diffResult} />
+      <Header isCompareMode={isCompareMode} onToggleMode={handleToggleMode} />
+      {!isCompareMode && (
+        <TextAreas
+          originalText={originalText}
+          modifiedText={modifiedText}
+          onOriginalChange={setOriginalText}
+          onModifiedChange={setModifiedText}
+        />
+      )}
+      {isCompareMode && <CompareDisplay diffResult={diffResult} />}
     </div>
   );
 }
