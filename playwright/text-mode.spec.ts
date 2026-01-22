@@ -126,4 +126,183 @@ test.describe('Text Mode Comparison', () => {
       modifiedLine.locator('.char-diff--insert', { hasText: 'There' }),
     ).toBeVisible();
   });
+  test.describe('Collapsing Identical Sections', () => {
+    test('collapses lines at the beginning', async ({ page }) => {
+      // Create 15 lines. First 10 identical, line 11 changed.
+      // Context is 3. So lines 1..7 (index 0..6) should be hidden.
+      // Index 10 is changed. Visible: 7,8,9,10.
+      // 0..6 are hidden. Count = 7.
+      const common = Array.from({ length: 10 }, (_, i) => `Line ${i + 1}`).join(
+        '\n',
+      );
+      const original = `${common}\nLine 11 Original`;
+      const modified = `${common}\nLine 11 Modified`;
+
+      await page.locator('#original').fill(original);
+      await page.locator('#modified').fill(modified);
+      await page.locator('#compare-btn').click();
+
+      // Expect collapse at start
+      const collapseHeader = page.locator('.diff-collapsed').first();
+      await expect(collapseHeader).toBeVisible();
+      await expect(collapseHeader).toContainText('7 unchanged lines hidden');
+
+      // Verify expansion
+      await collapseHeader.click();
+      await expect(page.getByText('Line 1').first()).toBeVisible();
+      // Should show expansion header "Collapse 7 unchanged lines"
+      await expect(page.locator('.diff-collapsed--expanded')).toContainText(
+        'Collapse 7 unchanged lines',
+      );
+    });
+
+    test('collapses lines at the end', async ({ page }) => {
+      // Line 1 changed. 10 lines identical after.
+      // Line 1 (index 0) changed. Visible 0..3 (Lines 1..4).
+      // Hidden: Lines 5..11 (Indices 4..10). Total 7.
+      const common = Array.from({ length: 10 }, (_, i) => `Line ${i + 2}`).join(
+        '\n',
+      );
+      const original = `Line 1 Original\n${common}`;
+      const modified = `Line 1 Modified\n${common}`;
+
+      await page.locator('#original').fill(original);
+      await page.locator('#modified').fill(modified);
+      await page.locator('#compare-btn').click();
+
+      const collapseFooter = page.locator('.diff-collapsed').last();
+      await expect(collapseFooter).toBeVisible();
+      await expect(collapseFooter).toContainText('7 unchanged lines hidden');
+    });
+
+    test('collapses lines in the middle', async ({ page }) => {
+      // Line 1 changed. 14 lines identical. Line 16 changed.
+      // Index 0 changed -> Keep 0..3 (Lines 1..4)
+      // Index 15 changed -> Keep 12..15 (Lines 13..16)
+      // Hide Lines 5..12.
+      // 12 - 5 + 1 = 8 lines.
+
+      const prefix = 'Line 1 Original\n';
+      const prefixMod = 'Line 1 Modified\n';
+      const suffix = '\nLine 16 Original';
+      const suffixMod = '\nLine 16 Modified';
+      const middle = Array.from({ length: 14 }, (_, i) => `Line ${i + 2}`).join(
+        '\n',
+      );
+
+      await page.locator('#original').fill(prefix + middle + suffix);
+      await page.locator('#modified').fill(prefixMod + middle + suffixMod);
+      await page.locator('#compare-btn').click();
+
+      const collapseMiddle = page.locator('.diff-collapsed');
+      await expect(collapseMiddle).toBeVisible();
+      await expect(collapseMiddle).toContainText('8 unchanged lines hidden');
+
+      // Verify visible lines around it
+      await expect(page.getByText('Line 4').first()).toBeVisible(); // Last visible top
+      await expect(page.getByText('Line 13').first()).toBeVisible(); // First visible bottom
+      await expect(page.getByText('Line 5').first()).not.toBeVisible(); // Hidden
+      await expect(page.getByText('Line 12').first()).not.toBeVisible(); // Hidden
+    });
+
+    test('collapses multiple regions', async ({ page }) => {
+      // Structure:
+      // Change (L1)
+      // Gap 1 (8 lines hidden) -> Needs 8+6 = 14 lines.
+      // Change (L16)
+      // Gap 2 (8 lines hidden) -> Needs 14 lines.
+      // Change (L31)
+
+      // L1 changed. Vis 1..4.
+      // L16 changed. Vis 13..16 and 16..19. (Union 13..19)
+      // Gap: 5..12 (8 lines).
+      // L31 changed. Vis 28..31.
+      // Gap: 20..27 (8 lines).
+
+      // Total lines: 31.
+
+      const lines: string[] = [];
+      for (let i = 1; i <= 31; i++) {
+        lines.push(`Line ${i}`);
+      }
+
+      const originalLines = [...lines];
+      const modifiedLines = [...lines];
+
+      // Modify L1, L16, L31
+      originalLines[0] = 'Line 1 Original';
+      modifiedLines[0] = 'Line 1 Modified';
+      originalLines[15] = 'Line 16 Original';
+      modifiedLines[15] = 'Line 16 Modified';
+      originalLines[30] = 'Line 31 Original';
+      modifiedLines[30] = 'Line 31 Modified';
+
+      await page.locator('#original').fill(originalLines.join('\n'));
+      await page.locator('#modified').fill(modifiedLines.join('\n'));
+      await page.locator('#compare-btn').click();
+
+      // Should find 2 collapse sections
+      await expect(page.locator('.diff-collapsed')).toHaveCount(2);
+      await expect(page.locator('.diff-collapsed').nth(0)).toContainText(
+        '8 unchanged lines hidden',
+      );
+      await expect(page.locator('.diff-collapsed').nth(1)).toContainText(
+        '8 unchanged lines hidden',
+      );
+    });
+
+    test('toggles collapse state (expand and re-collapse)', async ({
+      page,
+    }) => {
+      // Setup a scenario with a large middle section to hide
+      // 20 lines total. L1 and L20 changed.
+      // Context 3 lines around changes.
+      // Hidden: Lines 5..16 (12 lines).
+
+      // Create a middle section with a unique line to test visibility
+      const middleLines = Array.from({ length: 18 }, (_, i) =>
+        i === 8 ? 'Unique Hidden Line' : `Line ${i + 2}`,
+      );
+      const middle = middleLines.join('\n');
+
+      const original = `Line 1 Original\n${middle}\nLine 20 Original`;
+      const modified = `Line 1 Modified\n${middle}\nLine 20 Modified`;
+
+      await page.locator('#original').fill(original);
+      await page.locator('#modified').fill(modified);
+      await page.locator('#compare-btn').click();
+
+      // Use .first() to be precise, though there's only one here
+      const collapseSection = page.locator('.diff-collapsed').first();
+
+      // 1. Verify Initial State: Collapsed
+      await expect(collapseSection).toBeVisible();
+      await expect(collapseSection).toContainText('12 unchanged lines hidden');
+
+      // Verify our unique line is hidden
+      // Using .first() in case it exists in DOM but hidden
+      const hiddenLine = page.getByText('Unique Hidden Line').first();
+      await expect(hiddenLine).not.toBeVisible();
+
+      // 2. Click to Expand
+      await collapseSection.click();
+
+      // 3. Verify Expanded State
+      // Unique line should now be visible
+      await expect(hiddenLine).toBeVisible();
+
+      // Expanded header should be visible
+      const expandedHeader = page.locator('.diff-collapsed--expanded').first();
+      await expect(expandedHeader).toBeVisible();
+      await expect(expandedHeader).toContainText('Collapse 12 unchanged lines');
+
+      // 4. Click to Re-collapse
+      await expandedHeader.click();
+
+      // 5. Verify Back to Collapsed State
+      await expect(hiddenLine).not.toBeVisible();
+      await expect(collapseSection).toBeVisible();
+      await expect(expandedHeader).not.toBeVisible();
+    });
+  });
 });
