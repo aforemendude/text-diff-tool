@@ -19,31 +19,42 @@ export interface CharDiff {
   text: string;
 }
 
-// TODO: Minor rename/refactor: ErrorModalState -> ModalState
-interface ErrorModalState {
+interface ModalState {
   isOpen: boolean;
   title: string;
   message: string;
-  variant?: 'error' | 'info';
+  variant: 'error' | 'info';
 }
 
-// Recursively sort all keys in a JSON value
-function sortJsonKeys(value: unknown): unknown {
-  if (value === null || typeof value !== 'object') {
-    return value;
+function collectSortedKeys(value: unknown): string[] {
+  const keys: Set<string> = new Set();
+
+  function traverse(obj: unknown): void {
+    if (obj === null || typeof obj !== 'object') {
+      return;
+    }
+
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        traverse(item);
+      }
+      return;
+    }
+
+    const objKeys = Object.keys(obj as Record<string, unknown>);
+    for (const key of objKeys) {
+      keys.add(key);
+      traverse((obj as Record<string, unknown>)[key]);
+    }
   }
 
-  if (Array.isArray(value)) {
-    return value.map(sortJsonKeys);
-  }
+  traverse(value);
+  return Array.from(keys).sort();
+}
 
-  // Use Object.create(null) to avoid prototype pollution attacks
-  const sortedObj: Record<string, unknown> = Object.create(null);
-  const keys = Object.keys(value as Record<string, unknown>).sort();
-  for (const key of keys) {
-    sortedObj[key] = sortJsonKeys((value as Record<string, unknown>)[key]);
-  }
-  return sortedObj;
+function stringifyWithSortedKeys(value: unknown): string {
+  const sortedKeys = collectSortedKeys(value);
+  return JSON.stringify(value, sortedKeys, 2);
 }
 
 function App() {
@@ -52,14 +63,15 @@ function App() {
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [isJsonMode, setIsJsonMode] = useState(false);
-  const [errorModal, setErrorModal] = useState<ErrorModalState>({
+  const [modalState, setModalState] = useState<ModalState>({
     isOpen: false,
     title: '',
     message: '',
+    variant: 'error',
   });
 
   const closeErrorModal = () => {
-    setErrorModal({ isOpen: false, title: '', message: '', variant: 'error' });
+    setModalState({ isOpen: false, title: '', message: '', variant: 'error' });
   };
 
   const handleToggleMode = () => {
@@ -71,7 +83,7 @@ function App() {
       }
       if (result === 'identical') {
         // Using the term "content" here since it can be either text or JSON
-        setErrorModal({
+        setModalState({
           isOpen: true,
           title: 'Identical Content',
           message:
@@ -96,34 +108,28 @@ function App() {
     if (isJsonMode) {
       try {
         const parsedOriginal = JSON.parse(originalText);
-        textToCompareOriginal = JSON.stringify(
-          sortJsonKeys(parsedOriginal),
-          null,
-          2,
-        );
+        textToCompareOriginal = stringifyWithSortedKeys(parsedOriginal);
       } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-        setErrorModal({
+        setModalState({
           isOpen: true,
           title: 'JSON Parse Error - Original Text',
           message: `Failed to parse the original text as JSON:\n\n${errorMessage}`,
+          variant: 'error',
         });
         return 'error';
       }
 
       try {
         const parsedModified = JSON.parse(modifiedText);
-        textToCompareModified = JSON.stringify(
-          sortJsonKeys(parsedModified),
-          null,
-          2,
-        );
+        textToCompareModified = stringifyWithSortedKeys(parsedModified);
       } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-        setErrorModal({
+        setModalState({
           isOpen: true,
           title: 'JSON Parse Error - Modified Text',
           message: `Failed to parse the modified text as JSON:\n\n${errorMessage}`,
+          variant: 'error',
         });
         return 'error';
       }
@@ -300,12 +306,12 @@ function App() {
         />
       )}
       {isCompareMode && <CompareDisplay diffResult={diffResult} />}
-      {errorModal.isOpen && (
+      {modalState.isOpen && (
         <Modal
-          title={errorModal.title}
-          message={errorModal.message}
+          title={modalState.title}
+          message={modalState.message}
           onClose={closeErrorModal}
-          variant={errorModal.variant}
+          variant={modalState.variant}
         />
       )}
     </div>
