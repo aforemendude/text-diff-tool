@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 3,
   reporter: 'html',
   use: {
-    baseURL: process.env.BASE_URL || 'http://127.0.0.1:4173',
+    baseURL: process.env.BASE_URL || 'http://localhost:4173',
     trace: 'on-first-retry',
   },
 
@@ -29,7 +29,7 @@ export default defineConfig({
 
   webServer: {
     command: 'npm run preview',
-    url: 'http://127.0.0.1:4173',
+    url: 'http://localhost:4173',
     reuseExistingServer: true,
   },
 });
