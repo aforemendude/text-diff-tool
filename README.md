@@ -3,6 +3,8 @@
 A modern, browser-based text comparison tool that highlights differences between
 two text inputs with line-level and character-level diff visualization.
 
+https://aforemendude.github.io/text-diff-tool/
+
 ## Features
 
 - **Side-by-side comparison** – View original and modified text in a split
@@ -10,6 +12,8 @@ two text inputs with line-level and character-level diff visualization.
 - **Line-level diffing** – Highlights added, removed, and modified lines
 - **Character-level diffing** – Shows exact character changes within modified
   lines
+- **Collapsible unchanged sections** – Automatically hides large blocks of
+  identical lines to focus on changes
 - **Edit/Compare toggle** – Switch between editing text and viewing differences
 - **JSON Mode** – Normalizes JSON by sorting keys and formatting with consistent
   indentation before comparison
@@ -27,8 +31,7 @@ two text inputs with line-level and character-level diff visualization.
 
 ### Prerequisites
 
-- Node.js (v24 or higher recommended)
-- npm
+- Node.js v24
 
 ### Installation
 
@@ -58,6 +61,12 @@ Preview the production build:
 npm run preview
 ```
 
+### Tests
+
+```bash
+npm run playwright:local
+```
+
 ### Format Code
 
 ```bash
@@ -74,18 +83,9 @@ npm run format
 
 ### diff-match-patch
 
-This project uses the
-[diff-match-patch](https://github.com/google/diff-match-patch) library by Google
-for computing text differences.
+This project uses the `diff-match-patch` library for computing text differences.
 
-- **License**: Apache License 2.0
-- **Source**: https://github.com/google/diff-match-patch
-- **Usage**: The library provides the core diffing algorithm that powers the
-  line-level and character-level comparison features.
-
-## License
-
-MIT
+https://github.com/google/diff-match-patch
 
 ## AI Use Disclosure
 
