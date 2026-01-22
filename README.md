@@ -17,15 +17,7 @@ https://aforemendude.github.io/text-diff-tool/
 - **Edit/Compare toggle** – Switch between editing text and viewing differences
 - **JSON Mode** – Normalizes JSON by sorting keys and formatting with consistent
   indentation before comparison
-- **Static deployment** – Builds to static files for easy hosting (e.g., GitHub
-  Pages)
-
-## Tech Stack
-
-- **React 19** with TypeScript
-- **Vite** for fast development and building
-- **diff-match-patch** for diff computation
-- **Prettier** for code formatting
+- **Static deployment** – Builds to static files
 
 ## Getting Started
 
@@ -79,13 +71,9 @@ npm run format
 2. Click the **Compare** button to view the diff
 3. Click **Edit** to return to editing mode
 
-## Libraries
+## License and Libraries
 
-### diff-match-patch
-
-This project uses the `diff-match-patch` library for computing text differences.
-
-https://github.com/google/diff-match-patch
+See source code for license and library information.
 
 ## AI Use Disclosure
 
