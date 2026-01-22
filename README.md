@@ -19,6 +19,12 @@ https://aforemendude.github.io/text-diff-tool/
   indentation before comparison
 - **Static deployment** – Builds to static files
 
+## Privacy and Security
+
+- **Local Processing** – All data processing happens locally in your browser. No
+  data is ever sent to a remote server.
+- **No Tracking** – This tool is free of ads and trackers.
+
 ## Getting Started
 
 ### Prerequisites
@@ -71,11 +77,11 @@ npm run format
 2. Click the **Compare** button to view the diff
 3. Click **Edit** to return to editing mode
 
-## License and Libraries
+## License and Credits
 
 See source code for license and library information.
 
-## AI Use Disclosure
+### AI Use Disclosure
 
 This project was built with the assistance of AI coding tools. AI was used to
 help with code generation, documentation, and development workflow optimization.
