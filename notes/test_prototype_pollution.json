@@ -1,0 +1,19 @@
+{
+  "__proto__": {
+    "test": 1
+  },
+  "array": [
+    {
+      "__proto__": "test1",
+      "value": "test2"
+    },
+    {}
+  ],
+  "constructor": {
+    "a": 1,
+    "b": 2,
+    "prototype": {
+      "__proto__": { "c": 3 }
+    }
+  }
+}
