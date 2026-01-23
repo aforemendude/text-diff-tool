@@ -35,7 +35,7 @@ Try it now: https://aforemendude.github.io/text-diff-tool/
 
 - **Local Processing** – All data processing happens locally in your browser. No
   data is ever sent to a remote server.
-- **No Tracking** – This tool is free of ads and trackers.
+- **No Trackers** – This tool is free of ads and trackers.
 
 ## Getting Started
 
