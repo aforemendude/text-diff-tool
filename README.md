@@ -3,7 +3,19 @@
 A modern, browser-based text comparison tool that highlights differences between
 two text inputs with line-level and character-level diff visualization.
 
-https://aforemendude.github.io/text-diff-tool/
+![Text Compare Mode](/screenshots/text_compare_mode.png)
+
+<details>
+
+<summary>More Screenshots</summary>
+
+![JSON Edit Mode](/screenshots/json_edit_mode.png)
+
+![JSON Compare Mode](/screenshots/json_compare_mode.png)
+
+</details>
+
+Try it now: https://aforemendude.github.io/text-diff-tool/
 
 ## Features
 

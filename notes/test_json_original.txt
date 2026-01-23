@@ -1,0 +1,49 @@
+{
+  "user_id": 84921,
+  "username": "coder_jane",
+  "is_active": true,
+  "account_balance": 45.50,
+  "profile_settings": {
+    "theme": "dark_mode",
+    "notifications": {
+      "email": true,
+      "sms": false,
+      "push": true
+    },
+    "language": "en-US"
+  },
+  "tags": [
+    "developer",
+    "admin",
+    "contributor"
+  ],
+  "contact_info": {
+    "email": "jane.doe@example.com",
+    "phone": null,
+    "address": {
+      "street": "123 Tech Boulevard",
+      "city": "San Francisco",
+      "state": "CA",
+      "zipcode": "94105"
+    }
+  },
+  "order_history": [
+    {
+      "order_id": "ORD-101",
+      "date": "2023-10-15",
+      "items": [
+        { "product": "Mechanical Keyboard", "price": 120.00 },
+        { "product": "USB-C Cable", "price": 15.00 }
+      ],
+      "status": "delivered"
+    },
+    {
+      "order_id": "ORD-102",
+      "date": "2023-11-02",
+      "items": [
+        { "product": "Monitor Stand", "price": 45.00 }
+      ],
+      "status": "shipped"
+    }
+  ]
+}
