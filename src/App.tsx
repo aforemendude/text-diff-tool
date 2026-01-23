@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import './App.css';
-import { Header, TextAreas, CompareDisplay, Modal } from './components';
+import {
+  Header,
+  TextAreas,
+  CompareDisplay,
+  Modal,
+  type DiffCleanupMode,
+} from './components';
 
 export interface DiffResult {
   originalLines: LineDiff[];
@@ -66,6 +72,9 @@ function App() {
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [isJsonMode, setIsJsonMode] = useState(false);
+  const [diffCleanupMode, setDiffCleanupMode] =
+    useState<DiffCleanupMode>('semantic');
+  const [editCost, setEditCost] = useState(4);
   const [modalState, setModalState] = useState<ModalState>({
     isOpen: false,
     title: '',
@@ -144,6 +153,8 @@ function App() {
     }
 
     const dmp = new diff_match_patch();
+    dmp.Diff_Timeout = 0; // Disable processing timeout
+    dmp.Diff_EditCost = editCost;
 
     const originalLines = textToCompareOriginal.split('\n');
     const modifiedLines = textToCompareModified.split('\n');
@@ -226,7 +237,12 @@ function App() {
       } else if (origLine?.type === 'delete' && modLine?.type === 'insert') {
         // Compute character-level diff
         const charDiffs = dmp.diff_main(origLine.content, modLine.content);
-        dmp.diff_cleanupSemantic(charDiffs);
+        // Apply cleanup based on selected mode
+        if (diffCleanupMode === 'semantic') {
+          dmp.diff_cleanupSemantic(charDiffs);
+        } else if (diffCleanupMode === 'efficiency') {
+          dmp.diff_cleanupEfficiency(charDiffs);
+        }
 
         const origCharDiffs: CharDiff[] = [];
         const modCharDiffs: CharDiff[] = [];
@@ -299,6 +315,10 @@ function App() {
         onToggleMode={handleToggleMode}
         isJsonMode={isJsonMode}
         onJsonModeChange={setIsJsonMode}
+        diffCleanupMode={diffCleanupMode}
+        onDiffCleanupModeChange={setDiffCleanupMode}
+        editCost={editCost}
+        onEditCostChange={setEditCost}
       />
       {!isCompareMode && (
         <TextAreas

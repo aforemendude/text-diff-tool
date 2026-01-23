@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import AboutModal from './AboutModal';
+import SettingsModal, { type DiffCleanupMode } from './SettingsModal';
 
 interface HeaderProps {
   isCompareMode: boolean;
   onToggleMode: () => void;
   isJsonMode: boolean;
   onJsonModeChange: (enabled: boolean) => void;
+  diffCleanupMode: DiffCleanupMode;
+  onDiffCleanupModeChange: (mode: DiffCleanupMode) => void;
+  editCost: number;
+  onEditCostChange: (cost: number) => void;
 }
 
 function Header({
@@ -13,8 +18,13 @@ function Header({
   onToggleMode,
   isJsonMode,
   onJsonModeChange,
+  diffCleanupMode,
+  onDiffCleanupModeChange,
+  editCost,
+  onEditCostChange,
 }: HeaderProps) {
   const [showAbout, setShowAbout] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   return (
     <>
@@ -53,6 +63,16 @@ function Header({
             </span>
             <span className="toggle__label">JSON Mode</span>
           </label>
+          <button
+            id="settings-btn"
+            className="btn btn-secondary"
+            onClick={() => setShowSettings(true)}
+            aria-label="Settings"
+            title="Diff Settings"
+            disabled={isCompareMode}
+          >
+            Settings
+          </button>
         </div>
         <div className="header-right">
           <button
@@ -79,6 +99,15 @@ function Header({
         </div>
       </header>
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+      {showSettings && (
+        <SettingsModal
+          onClose={() => setShowSettings(false)}
+          diffCleanupMode={diffCleanupMode}
+          onDiffCleanupModeChange={onDiffCleanupModeChange}
+          editCost={editCost}
+          onEditCostChange={onEditCostChange}
+        />
+      )}
     </>
   );
 }
