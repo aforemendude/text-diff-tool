@@ -126,6 +126,7 @@ test.describe('Text Mode Comparison', () => {
       modifiedLine.locator('.char-diff--insert', { hasText: 'There' }),
     ).toBeVisible();
   });
+
   test.describe('Collapsing Identical Sections', () => {
     test('collapses lines at the beginning', async ({ page }) => {
       // Create 15 lines. First 10 identical, line 11 changed.

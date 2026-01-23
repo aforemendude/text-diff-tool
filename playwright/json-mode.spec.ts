@@ -90,4 +90,44 @@ test.describe('JSON Mode Comparison', () => {
       page.getByText('Failed to parse the modified text as JSON'),
     ).toBeVisible();
   });
+
+  test('handles arrays: sorts keys within objects but preserves array order', async ({
+    page,
+  }) => {
+    // Array order is same, but object keys are different
+    const text1 = `[
+      {"z": 1, "a": 2},
+      {"y": 3, "b": 4}
+    ]`;
+    const text2 = `[
+      {"a": 2, "z": 1},
+      {"b": 4, "y": 3}
+    ]`;
+
+    await page.locator('#original').fill(text1);
+    await page.locator('#modified').fill(text2);
+    await page.locator('#compare-btn').click();
+
+    await expect(page.getByText('Identical Content')).toBeVisible();
+  });
+
+  test('preserves array element order', async ({ page }) => {
+    // Same objects, but swapped in the array
+    const text1 = `[
+      {"id": 1},
+      {"id": 2}
+    ]`;
+    const text2 = `[
+      {"id": 2},
+      {"id": 1}
+    ]`;
+
+    await page.locator('#original').fill(text1);
+    await page.locator('#modified').fill(text2);
+    await page.locator('#compare-btn').click();
+
+    // Should NOT show identical modal, should show compare display
+    await expect(page.locator('.compare-display')).toBeVisible();
+    await expect(page.locator('.modal')).not.toBeVisible();
+  });
 });
