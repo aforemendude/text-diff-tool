@@ -75,6 +75,7 @@ npm run preview
 
 ```bash
 npm run playwright:local
+npm run test
 ```
 
 ### Format Code
