@@ -149,7 +149,8 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
             );
           }
 
-          // If this was a collapsed section that's now expanded, wrap with collapse button
+          // If this was a collapsed section that's now expanded, wrap with
+          // collapse button
           if (section.type === 'collapsed') {
             return (
               <div key={sectionKey} className="diff-expanded-section">

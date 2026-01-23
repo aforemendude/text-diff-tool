@@ -7,6 +7,7 @@ import {
   Modal,
   type DiffCleanupMode,
 } from './components';
+import { stringifyWithSortedKeys } from './utils/jsonUtils';
 
 export interface DiffResult {
   originalLines: LineDiff[];
@@ -30,40 +31,6 @@ interface ModalState {
   title: string;
   message: string;
   variant: 'error' | 'info';
-}
-
-function collectSortedKeys(value: unknown): string[] {
-  const keys: Set<string> = new Set();
-
-  function traverse(obj: unknown): void {
-    if (obj === null || typeof obj !== 'object') {
-      return;
-    }
-
-    if (Array.isArray(obj)) {
-      for (let i = 0; i < obj.length; i++) {
-        keys.add(i.toString());
-        traverse(obj[i]);
-      }
-      return;
-    }
-
-    const objKeys = Object.keys(obj as Record<string, unknown>);
-    for (const key of objKeys) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        keys.add(key);
-        traverse((obj as Record<string, unknown>)[key]);
-      }
-    }
-  }
-
-  traverse(value);
-  return Array.from(keys).sort();
-}
-
-function stringifyWithSortedKeys(value: unknown): string {
-  const sortedKeys = collectSortedKeys(value);
-  return JSON.stringify(value, sortedKeys, 2);
 }
 
 function App() {
@@ -218,7 +185,8 @@ function App() {
       }
     }
 
-    // Find modified lines (deletions followed by insertions) and compute char diffs
+    // Find modified lines (deletions followed by insertions) and compute char
+    // diffs
     const processedOriginal: LineDiff[] = [];
     const processedModified: LineDiff[] = [];
 
