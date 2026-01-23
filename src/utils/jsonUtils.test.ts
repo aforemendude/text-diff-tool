@@ -266,12 +266,12 @@ describe('stringifyWithSortedKeys', () => {
     // This tests the safeDeepCopy function's main purpose
     const input = JSON.parse(`{
         "__proto__": "value1",
-        "normal": "value2"
+        "obj": {}
       }`);
     const result = stringifyWithSortedKeys(input);
     const expected = `{
   "__proto__": "value1",
-  "normal": "value2"
+  "obj": {}
 }`;
     expect(result).toBe(expected);
   });
