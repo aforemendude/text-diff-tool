@@ -188,6 +188,12 @@ h1 {
   width: 100px;
 }
 
+#settings-btn:disabled {
+  pointer-events: initial;
+  background-color: #f3f4f6;
+  border-color: var(--border-medium);
+}
+
 .btn-secondary {
   background-color: #f3f4f6;
   border-color: var(--border-medium);
