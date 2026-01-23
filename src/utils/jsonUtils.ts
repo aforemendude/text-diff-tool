@@ -44,8 +44,6 @@ function safeDeepCopy(obj: unknown): unknown {
     return obj;
   }
 
-  const result = Object.create(null);
-
   if (Array.isArray(obj)) {
     const result = [];
     for (let i = 0; i < obj.length; i++) {
@@ -54,6 +52,7 @@ function safeDeepCopy(obj: unknown): unknown {
     return result;
   }
 
+  const result = Object.create(null);
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       result[key] = safeDeepCopy((obj as any)[key]);
