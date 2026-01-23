@@ -35,16 +35,19 @@ function collectSortedKeys(value: unknown): string[] {
     }
 
     if (Array.isArray(obj)) {
-      for (const item of obj) {
-        traverse(item);
+      for (let i = 0; i < obj.length; i++) {
+        keys.add(i.toString());
+        traverse(obj[i]);
       }
       return;
     }
 
     const objKeys = Object.keys(obj as Record<string, unknown>);
     for (const key of objKeys) {
-      keys.add(key);
-      traverse((obj as Record<string, unknown>)[key]);
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        keys.add(key);
+        traverse((obj as Record<string, unknown>)[key]);
+      }
     }
   }
 
@@ -70,7 +73,7 @@ function App() {
     variant: 'error',
   });
 
-  const closeErrorModal = () => {
+  const closeModal = () => {
     setModalState({ isOpen: false, title: '', message: '', variant: 'error' });
   };
 
@@ -310,7 +313,7 @@ function App() {
         <Modal
           title={modalState.title}
           message={modalState.message}
-          onClose={closeErrorModal}
+          onClose={closeModal}
           variant={modalState.variant}
         />
       )}

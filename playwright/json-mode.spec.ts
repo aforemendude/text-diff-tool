@@ -13,19 +13,16 @@ test.describe('JSON Mode Comparison', () => {
 
   test('ignores object key order', async ({ page }) => {
     // Two objects with same data but different key order
-    const obj1 = {
-      name: 'John',
-      age: 30,
-      city: 'New York',
-    };
-    const obj2 = {
-      city: 'New York',
-      name: 'John',
-      age: 30,
-    };
-
-    const text1 = JSON.stringify(obj1, null, 2);
-    const text2 = JSON.stringify(obj2, null, 2);
+    const text1 = `{
+      "name": "John",
+      "age": 30,
+      "city": "New York"
+    }`;
+    const text2 = `{
+      "city": "New York",
+      "name": "John",
+      "age": 30
+    }`;
 
     await page.locator('#original').fill(text1);
     await page.locator('#modified').fill(text2);
@@ -39,21 +36,7 @@ test.describe('JSON Mode Comparison', () => {
     ).toBeVisible();
   });
 
-  test('ignores whitespace and formatting differences', async ({ page }) => {
-    // Same object, different spacing
-    const obj = { name: 'Alice', active: true };
-    const text1 = JSON.stringify(obj); // one line, no spaces
-    const text2 = JSON.stringify(obj, null, 4); // formatted with 4 spaces
-
-    await page.locator('#original').fill(text1);
-    await page.locator('#modified').fill(text2);
-
-    await page.locator('#compare-btn').click();
-
-    await expect(page.getByText('Identical Content')).toBeVisible();
-  });
-
-  test('ignores both key order and formatting differences simultaneously', async ({
+  test('ignores both key order and formatting differences', async ({
     page,
   }) => {
     const text1 = '{"name": "Bob", "id": 123}';
