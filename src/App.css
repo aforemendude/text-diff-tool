@@ -459,6 +459,54 @@ textarea::-webkit-scrollbar-thumb:hover {
   box-shadow: inset -2px 0 0 0 #ff5353;
 }
 
+/* Trailing newline indicator */
+.diff-row--trailing-newline {
+  border-top: 1px dashed var(--border-medium);
+}
+
+.diff-trailing-newline {
+  display: flex;
+  flex: 1;
+  min-height: 1.5rem;
+  font-style: italic;
+}
+
+.diff-trailing-newline:first-child {
+  border-right: 1px solid var(--border-light);
+}
+
+.diff-trailing-newline--absent {
+  background-color: #fff5f5;
+}
+
+.diff-trailing-newline--absent .diff-line__gutter {
+  color: #e09800;
+  font-style: normal;
+}
+
+.diff-trailing-newline--present {
+  background-color: #f0faf0;
+}
+
+.diff-trailing-newline__text {
+  flex: 1;
+  padding: 0 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  user-select: none;
+}
+
+.diff-trailing-newline--absent .diff-trailing-newline__text {
+  color: #cf222e;
+}
+
+.diff-trailing-newline--present .diff-trailing-newline__text {
+  color: #1a7f37;
+}
+
 /* Scrollbar styling for compare display */
 .compare-display__content::-webkit-scrollbar {
   width: 12px;

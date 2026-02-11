@@ -12,6 +12,8 @@ import { stringifyWithSortedKeys } from './utils/jsonUtils';
 export interface DiffResult {
   originalLines: LineDiff[];
   modifiedLines: LineDiff[];
+  originalTrailingNewline: boolean;
+  modifiedTrailingNewline: boolean;
 }
 
 export interface LineDiff {
@@ -118,6 +120,10 @@ function App() {
     if (textToCompareOriginal === textToCompareModified) {
       return 'identical';
     }
+
+    // Track trailing newlines before splitting
+    const originalHasTrailingNewline = textToCompareOriginal.endsWith('\n');
+    const modifiedHasTrailingNewline = textToCompareModified.endsWith('\n');
 
     const dmp = new diff_match_patch();
     dmp.Diff_Timeout = 0; // Disable processing timeout
@@ -271,6 +277,8 @@ function App() {
     setDiffResult({
       originalLines: processedOriginal,
       modifiedLines: processedModified,
+      originalTrailingNewline: originalHasTrailingNewline,
+      modifiedTrailingNewline: modifiedHasTrailingNewline,
     });
 
     return 'success';

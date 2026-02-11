@@ -33,7 +33,14 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
     );
   }
 
-  const { originalLines, modifiedLines } = diffResult;
+  const {
+    originalLines,
+    modifiedLines,
+    originalTrailingNewline,
+    modifiedTrailingNewline,
+  } = diffResult;
+  const trailingNewlineDiffers =
+    originalTrailingNewline !== modifiedTrailingNewline;
 
   // Find which lines have changes
   const isChangedLine = (index: number): boolean => {
@@ -171,6 +178,42 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
 
           return <div key={sectionKey}>{lines}</div>;
         })}
+        {trailingNewlineDiffers && (
+          <div className="diff-row diff-row--trailing-newline">
+            <div
+              className={`diff-line diff-trailing-newline ${
+                originalTrailingNewline
+                  ? 'diff-trailing-newline--present'
+                  : 'diff-trailing-newline--absent'
+              }`}
+            >
+              <span className="diff-line__number"></span>
+              <span className="diff-trailing-newline__text">
+                {originalTrailingNewline ? (
+                  <>New line at end of text</>
+                ) : (
+                  <>No new line at end of text</>
+                )}
+              </span>
+            </div>
+            <div
+              className={`diff-line diff-trailing-newline ${
+                modifiedTrailingNewline
+                  ? 'diff-trailing-newline--present'
+                  : 'diff-trailing-newline--absent'
+              }`}
+            >
+              <span className="diff-line__number"></span>
+              <span className="diff-trailing-newline__text">
+                {modifiedTrailingNewline ? (
+                  <>New line at end of text</>
+                ) : (
+                  <>No new line at end of text</>
+                )}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
