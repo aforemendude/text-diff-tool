@@ -225,27 +225,31 @@ interface DiffLineProps {
 }
 
 function DiffLine({ line, side }: DiffLineProps) {
+  const isDelete =
+    line.type === 'delete' || (line.type === 'modify' && side === 'original');
+  const isInsert =
+    line.type === 'insert' || (line.type === 'modify' && side === 'modified');
+  const isEmpty = line.lineNumber <= 0;
+
   const getLineClass = () => {
     const baseClass = 'diff-line';
-    if (line.lineNumber === -1) {
-      return `${baseClass} diff-line--empty`;
-    }
-    switch (line.type) {
-      case 'delete':
-        return `${baseClass} diff-line--delete`;
-      case 'insert':
-        return `${baseClass} diff-line--insert`;
-      case 'modify':
-        return side === 'original'
-          ? `${baseClass} diff-line--modify-delete`
-          : `${baseClass} diff-line--modify-insert`;
-      default:
-        return baseClass;
-    }
+
+    if (isEmpty) return `${baseClass} diff-line--empty`;
+    if (isDelete) return `${baseClass} diff-line--delete`;
+    if (isInsert) return `${baseClass} diff-line--insert`;
+
+    return baseClass;
+  };
+
+  const getGutterContent = () => {
+    if (isEmpty) return '';
+    if (isDelete) return '−';
+    if (isInsert) return '+';
+    return '';
   };
 
   const renderContent = () => {
-    if (line.lineNumber === -1) {
+    if (line.lineNumber <= 0) {
       return <span className="diff-line__text">&nbsp;</span>;
     }
 
@@ -267,15 +271,7 @@ function DiffLine({ line, side }: DiffLineProps) {
       <span className="diff-line__number">
         {line.lineNumber > 0 ? line.lineNumber : ''}
       </span>
-      <span className="diff-line__gutter">
-        {line.type === 'delete' ||
-        (line.type === 'modify' && side === 'original')
-          ? '−'
-          : line.type === 'insert' ||
-              (line.type === 'modify' && side === 'modified')
-            ? '+'
-            : ''}
-      </span>
+      <span className="diff-line__gutter">{getGutterContent()}</span>
       {renderContent()}
     </div>
   );
