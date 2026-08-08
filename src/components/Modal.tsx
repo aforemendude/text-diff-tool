@@ -6,8 +6,7 @@ interface ModalProps {
 }
 
 function Modal({ title, message, onClose, variant = 'error' }: ModalProps) {
-  const titleClass =
-    variant === 'info' ? 'modal__title modal__title--info' : 'modal__title';
+  const titleClass = variant === 'info' ? 'modal__title modal__title--info' : 'modal__title';
 
   return (
     <div className="modal-overlay" onClick={onClose}>

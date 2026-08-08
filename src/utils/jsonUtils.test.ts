@@ -194,14 +194,10 @@ describe('stringifyWithSortedKeys', () => {
       const result = stringifyWithSortedKeys(input);
 
       // 'metadata' should come before 'users'
-      expect(result.indexOf('"metadata"')).toBeLessThan(
-        result.indexOf('"users"'),
-      );
+      expect(result.indexOf('"metadata"')).toBeLessThan(result.indexOf('"users"'));
 
       // Within metadata, 'created' should come before 'version'
-      expect(result.indexOf('"created"')).toBeLessThan(
-        result.indexOf('"version"'),
-      );
+      expect(result.indexOf('"created"')).toBeLessThan(result.indexOf('"version"'));
 
       // Within user objects, 'age' should come before 'name'
       expect(result.indexOf('"age"')).toBeLessThan(result.indexOf('"name"'));
@@ -242,23 +238,19 @@ describe('stringifyWithSortedKeys', () => {
 
   describe('consistent output for comparison', () => {
     it('produces identical output for semantically equal objects', () => {
-      // This is the main use case - ensuring two JSON objects that are
-      // semantically identical but formatted differently produce the same output
+      // This is the main use case - ensuring two JSON objects that are semantically identical but formatted differently
+      // produce the same output
       const json1 = JSON.parse('{"name":"test","value":123}');
       const json2 = JSON.parse('{"value":123,"name":"test"}');
 
-      expect(stringifyWithSortedKeys(json1)).toBe(
-        stringifyWithSortedKeys(json2),
-      );
+      expect(stringifyWithSortedKeys(json1)).toBe(stringifyWithSortedKeys(json2));
     });
 
     it('produces different output for semantically different objects', () => {
       const obj1 = { a: 1, b: 2 };
       const obj2 = { a: 1, b: 3 };
 
-      expect(stringifyWithSortedKeys(obj1)).not.toBe(
-        stringifyWithSortedKeys(obj2),
-      );
+      expect(stringifyWithSortedKeys(obj1)).not.toBe(stringifyWithSortedKeys(obj2));
     });
   });
 

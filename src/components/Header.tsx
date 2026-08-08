@@ -31,11 +31,7 @@ function Header({
       <header className="header">
         <div className="brand">
           <div className="logo-container">
-            <img
-              className="logo-icon"
-              src="/text-diff-tool/logo.svg"
-              alt="TextDiffTool Logo"
-            />
+            <img className="logo-icon" src="/text-diff-tool/logo.svg" alt="TextDiffTool Logo" />
           </div>
           <h1>
             <span className="brand-text">Text</span>
@@ -44,11 +40,7 @@ function Header({
           </h1>
         </div>
         <div className="header-center">
-          <button
-            id="compare-btn"
-            className="btn btn-primary"
-            onClick={onToggleMode}
-          >
+          <button id="compare-btn" className="btn btn-primary" onClick={onToggleMode}>
             {isCompareMode ? 'Edit' : 'Compare'}
           </button>
           <label className="toggle">
@@ -75,11 +67,7 @@ function Header({
           </button>
         </div>
         <div className="header-right">
-          <button
-            className="about-btn"
-            onClick={() => setShowAbout(true)}
-            aria-label="About"
-          >
+          <button className="about-btn" onClick={() => setShowAbout(true)} aria-label="About">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"

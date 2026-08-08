@@ -26,8 +26,8 @@ export default defineConfig({
       use: {
         ...devices['Desktop Safari'],
         launchOptions: {
-          // Snap applications can inject GIO modules linked against an
-          // incompatible glibc, which crashes WebKit's network process.
+          // Snap applications can inject GIO modules linked against an incompatible glibc, which crashes WebKit's
+          // network process.
           env: { ...process.env, GIO_MODULE_DIR: undefined },
         },
       },

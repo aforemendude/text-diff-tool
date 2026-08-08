@@ -21,9 +21,7 @@ test.describe('Text Mode Comparison', () => {
 
     // Should see identical content modal, not result view
     await expect(page.getByText('Identical Content')).toBeVisible();
-    await expect(
-      page.getByText('The original and modified content are exactly the same'),
-    ).toBeVisible();
+    await expect(page.getByText('The original and modified content are exactly the same')).toBeVisible();
 
     // Close modal
     await page.getByRole('button', { name: 'Close' }).click();
@@ -42,11 +40,9 @@ test.describe('Text Mode Comparison', () => {
     const compareDisplay = page.locator('.compare-display');
     await expect(compareDisplay).toBeVisible();
 
-    // Verify content
-    // Line 2 modified: "Line 2" -> "Line 2 changed"
-    // Since it's a modification, we expect the original to show delete and modified insert
-    // But implementation details might vary (whole line replacement vs partial).
-    // Based on App.tsx it seems to try char diff if lines are similar.
+    // Verify content Line 2 modified: "Line 2" -> "Line 2 changed" Since it's a modification, we expect the original to
+    // show delete and modified insert But implementation details might vary (whole line replacement vs partial). Based
+    // on App.tsx it seems to try char diff if lines are similar.
 
     // Let's verify we see the texts
     await expect(compareDisplay).toContainText('Line 1');
@@ -54,8 +50,7 @@ test.describe('Text Mode Comparison', () => {
     await expect(compareDisplay).toContainText('Line 3');
     await expect(compareDisplay).toContainText('Line 4');
 
-    // Specific class checks can be fragile if implementation changes, but let's try broadly
-    // Line 4 is an insertion
+    // Specific class checks can be fragile if implementation changes, but let's try broadly Line 4 is an insertion
     const addedLine = compareDisplay.locator('.diff-line--insert', {
       hasText: 'Line 4',
     });
@@ -76,9 +71,7 @@ test.describe('Text Mode Comparison', () => {
 
     await expect(page.locator('.compare-display')).toBeVisible();
     // Should see deletion of "Some text"
-    await expect(
-      page.locator('.diff-line--delete', { hasText: 'Some text' }),
-    ).toBeVisible();
+    await expect(page.locator('.diff-line--delete', { hasText: 'Some text' })).toBeVisible();
   });
 
   test('allows switching back to edit mode', async ({ page }) => {
@@ -106,36 +99,23 @@ test.describe('Text Mode Comparison', () => {
 
     await page.locator('#compare-btn').click();
 
-    // "World" -> "There"
-    // Expect both lines to show, with char diff highlighting
-    const originalLine = page
-      .locator('.diff-line--delete')
-      .filter({ hasText: 'Hello World' });
-    const modifiedLine = page
-      .locator('.diff-line--insert')
-      .filter({ hasText: 'Hello There' });
+    // "World" -> "There" Expect both lines to show, with char diff highlighting
+    const originalLine = page.locator('.diff-line--delete').filter({ hasText: 'Hello World' });
+    const modifiedLine = page.locator('.diff-line--insert').filter({ hasText: 'Hello There' });
 
     await expect(originalLine).toBeVisible();
     await expect(modifiedLine).toBeVisible();
 
     // Check specific char highlighting logic if possible, e.g. .char-diff--delete
-    await expect(
-      originalLine.locator('.char-diff--delete', { hasText: 'World' }),
-    ).toBeVisible();
-    await expect(
-      modifiedLine.locator('.char-diff--insert', { hasText: 'There' }),
-    ).toBeVisible();
+    await expect(originalLine.locator('.char-diff--delete', { hasText: 'World' })).toBeVisible();
+    await expect(modifiedLine.locator('.char-diff--insert', { hasText: 'There' })).toBeVisible();
   });
 
   test.describe('Collapsing Identical Sections', () => {
     test('collapses lines at the beginning', async ({ page }) => {
-      // Create 15 lines. First 10 identical, line 11 changed.
-      // Context is 3. So lines 1..7 (index 0..6) should be hidden.
-      // Index 10 is changed. Visible: 7,8,9,10.
-      // 0..6 are hidden. Count = 7.
-      const common = Array.from({ length: 10 }, (_, i) => `Line ${i + 1}`).join(
-        '\n',
-      );
+      // Create 15 lines. First 10 identical, line 11 changed. Context is 3. So lines 1..7 (index 0..6) should be
+      // hidden. Index 10 is changed. Visible: 7,8,9,10. 0..6 are hidden. Count = 7.
+      const common = Array.from({ length: 10 }, (_, i) => `Line ${i + 1}`).join('\n');
       const original = `${common}\nLine 11 Original`;
       const modified = `${common}\nLine 11 Modified`;
 
@@ -152,18 +132,13 @@ test.describe('Text Mode Comparison', () => {
       await collapseHeader.click();
       await expect(page.getByText('Line 1').first()).toBeVisible();
       // Should show expansion header "Collapse 7 unchanged lines"
-      await expect(page.locator('.diff-collapsed--expanded')).toContainText(
-        'Collapse 7 unchanged lines',
-      );
+      await expect(page.locator('.diff-collapsed--expanded')).toContainText('Collapse 7 unchanged lines');
     });
 
     test('collapses lines at the end', async ({ page }) => {
-      // Line 1 changed. 10 lines identical after.
-      // Line 1 (index 0) changed. Visible 0..3 (Lines 1..4).
-      // Hidden: Lines 5..11 (Indices 4..10). Total 7.
-      const common = Array.from({ length: 10 }, (_, i) => `Line ${i + 2}`).join(
-        '\n',
-      );
+      // Line 1 changed. 10 lines identical after. Line 1 (index 0) changed. Visible 0..3 (Lines 1..4). Hidden: Lines
+      // 5..11 (Indices 4..10). Total 7.
+      const common = Array.from({ length: 10 }, (_, i) => `Line ${i + 2}`).join('\n');
       const original = `Line 1 Original\n${common}`;
       const modified = `Line 1 Modified\n${common}`;
 
@@ -177,19 +152,14 @@ test.describe('Text Mode Comparison', () => {
     });
 
     test('collapses lines in the middle', async ({ page }) => {
-      // Line 1 changed. 14 lines identical. Line 16 changed.
-      // Index 0 changed -> Keep 0..3 (Lines 1..4)
-      // Index 15 changed -> Keep 12..15 (Lines 13..16)
-      // Hide Lines 5..12.
-      // 12 - 5 + 1 = 8 lines.
+      // Line 1 changed. 14 lines identical. Line 16 changed. Index 0 changed -> Keep 0..3 (Lines 1..4) Index 15 changed
+      // -> Keep 12..15 (Lines 13..16) Hide Lines 5..12. 12 - 5 + 1 = 8 lines.
 
       const prefix = 'Line 1 Original\n';
       const prefixMod = 'Line 1 Modified\n';
       const suffix = '\nLine 16 Original';
       const suffixMod = '\nLine 16 Modified';
-      const middle = Array.from({ length: 14 }, (_, i) => `Line ${i + 2}`).join(
-        '\n',
-      );
+      const middle = Array.from({ length: 14 }, (_, i) => `Line ${i + 2}`).join('\n');
 
       await page.locator('#original').fill(prefix + middle + suffix);
       await page.locator('#modified').fill(prefixMod + middle + suffixMod);
@@ -207,18 +177,11 @@ test.describe('Text Mode Comparison', () => {
     });
 
     test('collapses multiple regions', async ({ page }) => {
-      // Structure:
-      // Change (L1)
-      // Gap 1 (8 lines hidden) -> Needs 8+6 = 14 lines.
-      // Change (L16)
-      // Gap 2 (8 lines hidden) -> Needs 14 lines.
-      // Change (L31)
+      // Structure: Change (L1) Gap 1 (8 lines hidden) -> Needs 8+6 = 14 lines. Change (L16) Gap 2 (8 lines hidden) ->
+      // Needs 14 lines. Change (L31)
 
-      // L1 changed. Vis 1..4.
-      // L16 changed. Vis 13..16 and 16..19. (Union 13..19)
-      // Gap: 5..12 (8 lines).
-      // L31 changed. Vis 28..31.
-      // Gap: 20..27 (8 lines).
+      // L1 changed. Vis 1..4. L16 changed. Vis 13..16 and 16..19. (Union 13..19) Gap: 5..12 (8 lines). L31 changed. Vis
+      // 28..31. Gap: 20..27 (8 lines).
 
       // Total lines: 31.
 
@@ -244,26 +207,16 @@ test.describe('Text Mode Comparison', () => {
 
       // Should find 2 collapse sections
       await expect(page.locator('.diff-collapsed')).toHaveCount(2);
-      await expect(page.locator('.diff-collapsed').nth(0)).toContainText(
-        '8 unchanged lines hidden',
-      );
-      await expect(page.locator('.diff-collapsed').nth(1)).toContainText(
-        '8 unchanged lines hidden',
-      );
+      await expect(page.locator('.diff-collapsed').nth(0)).toContainText('8 unchanged lines hidden');
+      await expect(page.locator('.diff-collapsed').nth(1)).toContainText('8 unchanged lines hidden');
     });
 
-    test('toggles collapse state (expand and re-collapse)', async ({
-      page,
-    }) => {
-      // Setup a scenario with a large middle section to hide
-      // 20 lines total. L1 and L20 changed.
-      // Context 3 lines around changes.
-      // Hidden: Lines 5..16 (12 lines).
+    test('toggles collapse state (expand and re-collapse)', async ({ page }) => {
+      // Setup a scenario with a large middle section to hide 20 lines total. L1 and L20 changed. Context 3 lines around
+      // changes. Hidden: Lines 5..16 (12 lines).
 
       // Create a middle section with a unique line to test visibility
-      const middleLines = Array.from({ length: 18 }, (_, i) =>
-        i === 8 ? 'Unique Hidden Line' : `Line ${i + 2}`,
-      );
+      const middleLines = Array.from({ length: 18 }, (_, i) => (i === 8 ? 'Unique Hidden Line' : `Line ${i + 2}`));
       const middle = middleLines.join('\n');
 
       const original = `Line 1 Original\n${middle}\nLine 20 Original`;
@@ -280,16 +233,14 @@ test.describe('Text Mode Comparison', () => {
       await expect(collapseSection).toBeVisible();
       await expect(collapseSection).toContainText('12 unchanged lines hidden');
 
-      // Verify our unique line is hidden
-      // Using .first() in case it exists in DOM but hidden
+      // Verify our unique line is hidden Using .first() in case it exists in DOM but hidden
       const hiddenLine = page.getByText('Unique Hidden Line').first();
       await expect(hiddenLine).not.toBeVisible();
 
       // 2. Click to Expand
       await collapseSection.click();
 
-      // 3. Verify Expanded State
-      // Unique line should now be visible
+      // 3. Verify Expanded State Unique line should now be visible
       await expect(hiddenLine).toBeVisible();
 
       // Expanded header should be visible

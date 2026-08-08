@@ -54,12 +54,8 @@ test.describe('Settings and Diff Modes', () => {
     const originalLine = page.locator('.diff-line--delete');
     const modifiedLine = page.locator('.diff-line--insert');
 
-    await expect(originalLine.locator('.char-diff--delete')).toHaveText(
-      'quick brown',
-    );
-    await expect(modifiedLine.locator('.char-diff--insert')).toHaveText(
-      'brown quick',
-    );
+    await expect(originalLine.locator('.char-diff--delete')).toHaveText('quick brown');
+    await expect(modifiedLine.locator('.char-diff--insert')).toHaveText('brown quick');
   });
 
   test('applies no cleanup for raw diff results', async ({ page }) => {
@@ -79,17 +75,12 @@ test.describe('Settings and Diff Modes', () => {
     const originalLine = page.locator('.diff-line--delete');
     const modifiedLine = page.locator('.diff-line--insert');
 
-    await expect(originalLine.locator('.char-diff--delete')).toHaveText(
-      'quick ',
-    );
-    await expect(modifiedLine.locator('.char-diff--insert')).toHaveText(
-      ' quick',
-    );
+    await expect(originalLine.locator('.char-diff--delete')).toHaveText('quick ');
+    await expect(modifiedLine.locator('.char-diff--insert')).toHaveText(' quick');
   });
 
   test('edit cost affects efficiency cleanup', async ({ page }) => {
-    // A single character 'a' between two edits.
-    // Raw diff: -c, +m, a, -t, +p
+    // A single character 'a' between two edits. Raw diff: -c, +m, a, -t, +p
     const original = 'cat';
     const modified = 'map';
 
@@ -114,8 +105,8 @@ test.describe('Settings and Diff Modes', () => {
 
     await page.locator('#compare-btn').click();
 
-    // With cost 4, 'a' (1 char) is less than cost, so it should be merged into the edits.
-    // The entire line should be a modification without any equal char diffs.
+    // With cost 4, 'a' (1 char) is less than cost, so it should be merged into the edits. The entire line should be a
+    // modification without any equal char diffs.
     await expect(page.locator('.char-diff--equal')).not.toBeVisible();
     await expect(page.locator('.char-diff--delete').first()).toHaveText('cat');
     await expect(page.locator('.char-diff--insert').first()).toHaveText('map');

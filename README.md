@@ -1,7 +1,7 @@
 # TextDiffTool
 
-A modern, browser-based text comparison tool that highlights differences between
-two text inputs with line-level and character-level diff visualization.
+A modern, browser-based text comparison tool that highlights differences between two text inputs with line-level and
+character-level diff visualization.
 
 ![Text Compare Mode](/screenshots/text_compare_mode.png)
 
@@ -19,22 +19,17 @@ Try it now: https://aforemendude.github.io/text-diff-tool/
 
 ## Features
 
-- **Side-by-side comparison** – View original and modified text in a split
-  display
+- **Side-by-side comparison** – View original and modified text in a split display
 - **Line-level diffing** – Highlights added, removed, and modified lines
-- **Character-level diffing** – Shows exact character changes within modified
-  lines
-- **Collapsible unchanged sections** – Automatically hides large blocks of
-  identical lines to focus on changes
+- **Character-level diffing** – Shows exact character changes within modified lines
+- **Collapsible unchanged sections** – Automatically hides large blocks of identical lines to focus on changes
 - **Edit/Compare toggle** – Switch between editing text and viewing differences
-- **JSON Mode** – Normalizes JSON by sorting keys and formatting with consistent
-  indentation before comparison
+- **JSON Mode** – Normalizes JSON by sorting keys and formatting with consistent indentation before comparison
 - **Static deployment** – Builds to static files
 
 ## Privacy and Security
 
-- **Local Processing** – All data processing happens locally in your browser. No
-  data is ever sent to a remote server.
+- **Local Processing** – All data processing happens locally in your browser. No data is ever sent to a remote server.
 - **No Trackers** – This tool is free of ads and trackers.
 
 ## Getting Started
@@ -96,5 +91,5 @@ See source code for license and library information.
 
 ### AI Use Disclosure
 
-This project was built with the assistance of AI coding tools. AI was used to
-help with code generation, documentation, and development workflow optimization.
+This project was built with the assistance of AI coding tools. AI was used to help with code generation, documentation,
+and development workflow optimization.

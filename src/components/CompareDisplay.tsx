@@ -18,29 +18,20 @@ type DisplaySection =
     };
 
 function CompareDisplay({ diffResult }: CompareDisplayProps) {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(),
-  );
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   if (!diffResult) {
     return (
       <div className="compare-display compare-display--empty">
         <p className="compare-display__placeholder">
-          Enter text in both fields and click <strong>Compare</strong> to see
-          differences
+          Enter text in both fields and click <strong>Compare</strong> to see differences
         </p>
       </div>
     );
   }
 
-  const {
-    originalLines,
-    modifiedLines,
-    originalTrailingNewline,
-    modifiedTrailingNewline,
-  } = diffResult;
-  const trailingNewlineDiffers =
-    originalTrailingNewline !== modifiedTrailingNewline;
+  const { originalLines, modifiedLines, originalTrailingNewline, modifiedTrailingNewline } = diffResult;
+  const trailingNewlineDiffers = originalTrailingNewline !== modifiedTrailingNewline;
 
   // Find which lines have changes
   const isChangedLine = (index: number): boolean => {
@@ -64,11 +55,7 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
     for (let i = 0; i < totalLines; i++) {
       if (isChangedLine(i)) {
         // Add this line and context around it
-        for (
-          let j = Math.max(0, i - CONTEXT_LINES);
-          j <= Math.min(totalLines - 1, i + CONTEXT_LINES);
-          j++
-        ) {
+        for (let j = Math.max(0, i - CONTEXT_LINES); j <= Math.min(totalLines - 1, i + CONTEXT_LINES); j++) {
           visibleLines.add(j);
         }
       }
@@ -126,20 +113,12 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
         {sections.map((section) => {
           const sectionKey = `${section.startIndex}-${section.endIndex}`;
 
-          if (
-            section.type === 'collapsed' &&
-            !expandedSections.has(sectionKey)
-          ) {
+          if (section.type === 'collapsed' && !expandedSections.has(sectionKey)) {
             return (
-              <div
-                key={sectionKey}
-                className="diff-collapsed"
-                onClick={() => toggleSection(sectionKey)}
-              >
+              <div key={sectionKey} className="diff-collapsed" onClick={() => toggleSection(sectionKey)}>
                 <span className="diff-collapsed__icon">⊕</span>
                 <span className="diff-collapsed__text">
-                  {section.lineCount} unchanged{' '}
-                  {section.lineCount === 1 ? 'line' : 'lines'} hidden
+                  {section.lineCount} unchanged {section.lineCount === 1 ? 'line' : 'lines'} hidden
                 </span>
               </div>
             );
@@ -156,19 +135,14 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
             );
           }
 
-          // If this was a collapsed section that's now expanded, wrap with
-          // collapse button
+          // If this was a collapsed section that's now expanded, wrap with collapse button
           if (section.type === 'collapsed') {
             return (
               <div key={sectionKey} className="diff-expanded-section">
-                <div
-                  className="diff-collapsed diff-collapsed--expanded"
-                  onClick={() => toggleSection(sectionKey)}
-                >
+                <div className="diff-collapsed diff-collapsed--expanded" onClick={() => toggleSection(sectionKey)}>
                   <span className="diff-collapsed__icon">⊖</span>
                   <span className="diff-collapsed__text">
-                    Collapse {section.lineCount} unchanged{' '}
-                    {section.lineCount === 1 ? 'line' : 'lines'}
+                    Collapse {section.lineCount} unchanged {section.lineCount === 1 ? 'line' : 'lines'}
                   </span>
                 </div>
                 {lines}
@@ -182,34 +156,22 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
           <div className="diff-row diff-row--trailing-newline">
             <div
               className={`diff-line diff-trailing-newline ${
-                originalTrailingNewline
-                  ? 'diff-trailing-newline--present'
-                  : 'diff-trailing-newline--absent'
+                originalTrailingNewline ? 'diff-trailing-newline--present' : 'diff-trailing-newline--absent'
               }`}
             >
               <span className="diff-line__number"></span>
               <span className="diff-trailing-newline__text">
-                {originalTrailingNewline ? (
-                  <>New line at end of text</>
-                ) : (
-                  <>No new line at end of text</>
-                )}
+                {originalTrailingNewline ? <>New line at end of text</> : <>No new line at end of text</>}
               </span>
             </div>
             <div
               className={`diff-line diff-trailing-newline ${
-                modifiedTrailingNewline
-                  ? 'diff-trailing-newline--present'
-                  : 'diff-trailing-newline--absent'
+                modifiedTrailingNewline ? 'diff-trailing-newline--present' : 'diff-trailing-newline--absent'
               }`}
             >
               <span className="diff-line__number"></span>
               <span className="diff-trailing-newline__text">
-                {modifiedTrailingNewline ? (
-                  <>New line at end of text</>
-                ) : (
-                  <>No new line at end of text</>
-                )}
+                {modifiedTrailingNewline ? <>New line at end of text</> : <>No new line at end of text</>}
               </span>
             </div>
           </div>
@@ -225,10 +187,8 @@ interface DiffLineProps {
 }
 
 function DiffLine({ line, side }: DiffLineProps) {
-  const isDelete =
-    line.type === 'delete' || (line.type === 'modify' && side === 'original');
-  const isInsert =
-    line.type === 'insert' || (line.type === 'modify' && side === 'modified');
+  const isDelete = line.type === 'delete' || (line.type === 'modify' && side === 'original');
+  const isInsert = line.type === 'insert' || (line.type === 'modify' && side === 'modified');
   const isEmpty = line.lineNumber <= 0;
 
   const getLineClass = () => {
@@ -268,9 +228,7 @@ function DiffLine({ line, side }: DiffLineProps) {
 
   return (
     <div className={getLineClass()}>
-      <span className="diff-line__number">
-        {line.lineNumber > 0 ? line.lineNumber : ''}
-      </span>
+      <span className="diff-line__number">{line.lineNumber > 0 ? line.lineNumber : ''}</span>
       <span className="diff-line__gutter">{getGutterContent()}</span>
       {renderContent()}
     </div>

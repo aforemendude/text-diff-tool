@@ -9,12 +9,7 @@ declare class diff_match_patch {
   Patch_Margin: number;
   Match_MaxBits: number;
 
-  diff_main(
-    text1: string,
-    text2: string,
-    opt_checklines?: boolean,
-    opt_deadline?: number,
-  ): diff_match_patch.Diff[];
+  diff_main(text1: string, text2: string, opt_checklines?: boolean, opt_deadline?: number): diff_match_patch.Diff[];
 
   diff_commonPrefix(text1: string, text2: string): number;
   diff_commonSuffix(text1: string, text2: string): number;
@@ -43,13 +38,8 @@ declare class diff_match_patch {
     opt_c?: diff_match_patch.Diff[],
   ): diff_match_patch.patch_obj[];
 
-  patch_deepCopy(
-    patches: diff_match_patch.patch_obj[],
-  ): diff_match_patch.patch_obj[];
-  patch_apply(
-    patches: diff_match_patch.patch_obj[],
-    text: string,
-  ): [string, boolean[]];
+  patch_deepCopy(patches: diff_match_patch.patch_obj[]): diff_match_patch.patch_obj[];
+  patch_apply(patches: diff_match_patch.patch_obj[], text: string): [string, boolean[]];
 
   patch_addPadding(patches: diff_match_patch.patch_obj[]): string;
   patch_splitMax(patches: diff_match_patch.patch_obj[]): void;
@@ -58,10 +48,7 @@ declare class diff_match_patch {
   patch_fromText(textline: string): diff_match_patch.patch_obj[];
 
   // Internal helper methods for line mode diff
-  diff_linesToChars_(
-    text1: string,
-    text2: string,
-  ): { chars1: string; chars2: string; lineArray: string[] };
+  diff_linesToChars_(text1: string, text2: string): { chars1: string; chars2: string; lineArray: string[] };
   diff_charsToLines_(diffs: diff_match_patch.Diff[], lineArray: string[]): void;
 }
 

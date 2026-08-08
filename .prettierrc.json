@@ -1,4 +1,6 @@
 {
-  "singleQuote": true,
-  "proseWrap": "always"
+  "plugins": ["@aforemendude/prettier-plugin-wrap-comments"],
+  "printWidth": 120,
+  "proseWrap": "always",
+  "singleQuote": true
 }

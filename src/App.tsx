@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import './App.css';
-import {
-  Header,
-  TextAreas,
-  CompareDisplay,
-  Modal,
-  type DiffCleanupMode,
-} from './components';
+import { Header, TextAreas, CompareDisplay, Modal, type DiffCleanupMode } from './components';
 import { stringifyWithSortedKeys } from './utils/jsonUtils';
 
 export interface DiffResult {
@@ -41,8 +35,7 @@ function App() {
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [isJsonMode, setIsJsonMode] = useState(false);
-  const [diffCleanupMode, setDiffCleanupMode] =
-    useState<DiffCleanupMode>('semantic');
+  const [diffCleanupMode, setDiffCleanupMode] = useState<DiffCleanupMode>('semantic');
   const [editCost, setEditCost] = useState(4);
   const [modalState, setModalState] = useState<ModalState>({
     isOpen: false,
@@ -67,8 +60,7 @@ function App() {
         setModalState({
           isOpen: true,
           title: 'Identical Content',
-          message:
-            'The original and modified content are exactly the same. There are no differences to display.',
+          message: 'The original and modified content are exactly the same. There are no differences to display.',
           variant: 'info',
         });
         return; // Don't switch to compare mode if contents are identical
@@ -136,10 +128,7 @@ function App() {
     const lineText1 = originalLines.join('\n');
     const lineText2 = modifiedLines.join('\n');
 
-    const { chars1, chars2, lineArray } = dmp.diff_linesToChars_(
-      lineText1,
-      lineText2,
-    );
+    const { chars1, chars2, lineArray } = dmp.diff_linesToChars_(lineText1, lineText2);
     const lineDiffs = dmp.diff_main(chars1, chars2, false);
     dmp.diff_charsToLines_(lineDiffs, lineArray);
 
@@ -153,9 +142,7 @@ function App() {
     for (const diff of lineDiffs) {
       const op = diff[0];
       const text = diff[1];
-      const lines = text
-        .split('\n')
-        .filter((val, i, arr) => i < arr.length - 1 || val !== '');
+      const lines = text.split('\n').filter((val, i, arr) => i < arr.length - 1 || val !== '');
 
       if (op === DIFF_EQUAL) {
         for (const line of lines) {
@@ -191,8 +178,7 @@ function App() {
       }
     }
 
-    // Find modified lines (deletions followed by insertions) and compute char
-    // diffs
+    // Find modified lines (deletions followed by insertions) and compute char diffs
     const processedOriginal: LineDiff[] = [];
     const processedModified: LineDiff[] = [];
 

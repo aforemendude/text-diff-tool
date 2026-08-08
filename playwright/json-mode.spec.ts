@@ -31,14 +31,10 @@ test.describe('JSON Mode Comparison', () => {
 
     // Should see identical content modal
     await expect(page.getByText('Identical Content')).toBeVisible();
-    await expect(
-      page.getByText('The original and modified content are exactly the same'),
-    ).toBeVisible();
+    await expect(page.getByText('The original and modified content are exactly the same')).toBeVisible();
   });
 
-  test('ignores both key order and formatting differences', async ({
-    page,
-  }) => {
+  test('ignores both key order and formatting differences', async ({ page }) => {
     const text1 = '{"name": "Bob", "id": 123}';
     const text2 = `{
       "id": 123,
@@ -66,9 +62,8 @@ test.describe('JSON Mode Comparison', () => {
     const compareDisplay = page.locator('.compare-display');
     await expect(compareDisplay).toBeVisible();
 
-    // The display should show the formatted JSON
-    // We expect formatting to apply (lines 2 spaces indented)
-    // And we expect differences to be highlighted
+    // The display should show the formatted JSON We expect formatting to apply (lines 2 spaces indented) And we expect
+    // differences to be highlighted
     await expect(compareDisplay).toContainText('"value": 100');
     await expect(compareDisplay).toContainText('"value": 200');
   });
@@ -83,17 +78,11 @@ test.describe('JSON Mode Comparison', () => {
     await page.locator('#compare-btn').click();
 
     // Should show error modal
-    await expect(page.locator('.modal__title')).toContainText(
-      'JSON Parse Error',
-    );
-    await expect(
-      page.getByText('Failed to parse the modified text as JSON'),
-    ).toBeVisible();
+    await expect(page.locator('.modal__title')).toContainText('JSON Parse Error');
+    await expect(page.getByText('Failed to parse the modified text as JSON')).toBeVisible();
   });
 
-  test('handles arrays: sorts keys within objects but preserves array order', async ({
-    page,
-  }) => {
+  test('handles arrays: sorts keys within objects but preserves array order', async ({ page }) => {
     // Array order is same, but object keys are different
     const text1 = `[
       {"z": 1, "a": 2},

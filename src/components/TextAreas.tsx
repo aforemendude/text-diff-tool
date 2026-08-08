@@ -5,12 +5,7 @@ interface TextAreasProps {
   onModifiedChange: (value: string) => void;
 }
 
-function TextAreas({
-  originalText,
-  modifiedText,
-  onOriginalChange,
-  onModifiedChange,
-}: TextAreasProps) {
+function TextAreas({ originalText, modifiedText, onOriginalChange, onModifiedChange }: TextAreasProps) {
   return (
     <main className="workspace">
       <div className="editor-pane">
