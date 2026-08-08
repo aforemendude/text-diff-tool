@@ -50,9 +50,9 @@ test.describe('Settings and Diff Modes', () => {
     // Settings are semantic by default
     await page.locator('#compare-btn').click();
 
-    // With semantic cleanup, "quick" vs "fast" should be treated as a word replacement
-    const originalLine = page.locator('.diff-line--modify-delete');
-    const modifiedLine = page.locator('.diff-line--modify-insert');
+    // Semantic cleanup treats the reordered phrase as a word replacement.
+    const originalLine = page.locator('.diff-line--delete');
+    const modifiedLine = page.locator('.diff-line--insert');
 
     await expect(originalLine.locator('.char-diff--delete')).toHaveText(
       'quick brown',
@@ -75,10 +75,9 @@ test.describe('Settings and Diff Modes', () => {
     await page.locator('#modified').fill(modified);
     await page.locator('#compare-btn').click();
 
-    // "apple" -> "apply"
-    // Raw diff: "appl" (equal), "e" (delete), "y" (insert)
-    const originalLine = page.locator('.diff-line--modify-delete');
-    const modifiedLine = page.locator('.diff-line--modify-insert');
+    // Raw cleanup preserves the common "brown" text between the edits.
+    const originalLine = page.locator('.diff-line--delete');
+    const modifiedLine = page.locator('.diff-line--insert');
 
     await expect(originalLine.locator('.char-diff--delete')).toHaveText(
       'quick ',

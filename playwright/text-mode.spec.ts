@@ -109,10 +109,10 @@ test.describe('Text Mode Comparison', () => {
     // "World" -> "There"
     // Expect both lines to show, with char diff highlighting
     const originalLine = page
-      .locator('.diff-line--modify-delete')
+      .locator('.diff-line--delete')
       .filter({ hasText: 'Hello World' });
     const modifiedLine = page
-      .locator('.diff-line--modify-insert')
+      .locator('.diff-line--insert')
       .filter({ hasText: 'Hello There' });
 
     await expect(originalLine).toBeVisible();
