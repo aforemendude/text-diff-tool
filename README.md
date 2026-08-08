@@ -37,11 +37,29 @@ Try it now: https://aforemendude.github.io/text-diff-tool/
 ### Prerequisites
 
 - Node.js v24
+- npm (included with Node.js)
 
 ### Installation
 
 ```bash
 npm install
+```
+
+Playwright also needs its browser binaries. Choose the command for your environment:
+
+```bash
+# macOS or Windows
+npx playwright install
+
+# Supported Linux distributions and Linux CI/container environments
+npx playwright install --with-deps
+```
+
+The Linux command installs both the browsers and their required system packages, and may prompt for `sudo`. If the
+browsers are already installed and you only need the system packages, run:
+
+```bash
+npx playwright install-deps
 ```
 
 ### Development
@@ -68,8 +86,15 @@ npm run preview
 
 ### Tests
 
+Run the Playwright end-to-end tests (the production preview server starts automatically):
+
 ```bash
 npm run playwright:local
+```
+
+Run the Vitest unit tests:
+
+```bash
 npm run test
 ```
 
