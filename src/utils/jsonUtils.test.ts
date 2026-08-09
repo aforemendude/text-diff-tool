@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import { detectJsonIssues, stringifyWithSortedKeys } from './jsonUtils';
 
 describe('stringifyWithSortedKeys', () => {
@@ -9,7 +9,10 @@ describe('stringifyWithSortedKeys', () => {
 
     it('handles undefined', () => {
       // JSON.stringify converts undefined to undefined (not a string)
-      expect(stringifyWithSortedKeys(undefined)).toBeUndefined();
+      const result = stringifyWithSortedKeys(undefined);
+
+      expectTypeOf(result).toEqualTypeOf<string | undefined>();
+      expect(result).toBeUndefined();
     });
 
     it('handles numbers', () => {

@@ -14,7 +14,7 @@ const getOrderedOwnKeys = (value: object): (string | symbol)[] => {
 };
 
 /** Stringifies a value with sorted keys for consistent JSON comparison. */
-export function stringifyWithSortedKeys(value: unknown): string {
+export function stringifyWithSortedKeys(value: unknown): string | undefined {
   const proxyCache = new WeakMap<object, object>();
 
   const getSortingProxy = (currentValue: object): object => {

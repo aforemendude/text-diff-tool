@@ -40,8 +40,13 @@ interface ParsedJson {
 function parseJson(text: string, source: 'original' | 'modified'): ParsedJson | ComputeDiffOutcome {
   try {
     const parsedValue: unknown = JSON.parse(text);
+    const normalizedText = stringifyWithSortedKeys(parsedValue);
+    if (normalizedText === undefined) {
+      throw new TypeError('Parsed JSON could not be serialized.');
+    }
+
     return {
-      normalizedText: stringifyWithSortedKeys(parsedValue),
+      normalizedText,
       issueCounts: detectJsonIssues(text),
     };
   } catch (error) {
