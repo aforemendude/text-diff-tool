@@ -49,17 +49,17 @@ Playwright also needs its browser binaries. Choose the command for your environm
 
 ```bash
 # macOS or Windows
-npx playwright install
+npm run playwright:install
 
 # Supported Linux distributions and Linux CI/container environments
-npx playwright install --with-deps
+npm run playwright:install -- --with-deps
 ```
 
 The Linux command installs both the browsers and their required system packages, and may prompt for `sudo`. If the
 browsers are already installed and you only need the system packages, run:
 
 ```bash
-npx playwright install-deps
+npm run playwright:install-deps
 ```
 
 ### Development
@@ -92,11 +92,11 @@ Run the Playwright end-to-end tests (the production build runs first, then the p
 npm run integration
 ```
 
-To test against an already-running development server, set `BASE_URL` and invoke Playwright directly. This skips both
-the production build and preview server. Extra arguments can select a focused spec or browser:
+To test against an already-running development server, set `BASE_URL` and use the development integration script. This
+skips both the production build and preview server. Extra arguments can select a focused spec or browser:
 
 ```bash
-BASE_URL=http://localhost:5173 npx playwright test playwright/about.spec.ts --project=chromium
+BASE_URL=http://localhost:5173 npm run integration:dev -- playwright/about.spec.ts --project=chromium
 ```
 
 Run the Vitest unit tests:

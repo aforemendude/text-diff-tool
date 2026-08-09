@@ -25,6 +25,9 @@
     "format:check": "prettier --check --cache --cache-strategy metadata .",
     "format:nocache": "prettier --write .",
     "integration": "npm run build && playwright test",
+    "integration:dev": "playwright test",
+    "playwright:install": "playwright install",
+    "playwright:install-deps": "playwright install-deps",
     "preview": "vite preview",
     "test": "vitest run",
     "verify": "prettier --check . && npm run test && npm run integration"
