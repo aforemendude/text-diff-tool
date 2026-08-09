@@ -13,19 +13,6 @@ repository searches, and the checks listed below.
 
 ## Findings
 
-### 4. The production CSP disables Vite hot-module reload during development
-
-- **Severity:** Low
-- **Reference:** `index.html:6-9` (related: `package.json:22`)
-- **Problem:** The CSP omits `connect-src`, so its `default-src 'none'` fallback blocks the WebSocket connection used by
-  the Vite development client. A focused Chromium run against `npm run dev` loaded the initial page but logged that the
-  Vite WebSocket was blocked by this exact policy.
-- **Impact:** Hot-module reload cannot connect, so source edits do not get Vite's expected live-update behavior and the
-  development loop becomes slower and potentially confusing.
-- **Recommendation:** Generate a development-specific CSP that permits only the Vite WebSocket endpoint while retaining
-  the stricter production policy. Keep the policy environment-aware rather than broadly enabling WebSocket connections
-  in production.
-
 ### 5. Playwright's configured trace mode can never capture a trace
 
 - **Severity:** Low
