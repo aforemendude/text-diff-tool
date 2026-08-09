@@ -40,6 +40,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body[hidden] {
+  display: none !important;
+}
+
 #app {
   height: 100%;
   display: flex;
