@@ -13,44 +13,6 @@ repository searches, and the checks listed below.
 
 ## Findings
 
-### 1. The committed and live GitHub Pages deployment is stale
-
-- **Severity:** Medium
-- **Reference:** `docs/index.html:12-13`, `docs/assets/index-yvjqNzWJ.js:1`, `docs/assets/index-B4ma4shS.css:1` (current
-  source: `src/App.tsx:64`, `src/components/Header.tsx:34,44`, `src/components/TextAreas.tsx:12`; deployment contract:
-  `vite.config.ts:8-10`, `README.md:18,73-79`)
-- **Problem:** The tracked deployment bundle predates the current source. The deployed assets contain the removed
-  `.layout`, `.brand`, `.header-center`, and `.workspace` structure, while current source uses `.app`, `.header__brand`,
-  `.header__controls`, and `.text-areas`. A focused Vite build to a temporary directory produced different JS/CSS assets
-  containing the current structure. The documented GitHub Pages URL returned byte-for-byte copies of the stale tracked
-  `docs/index.html`, JS, and CSS files, confirming this is the live deployment rather than an unused artifact.
-- **Impact:** Users of the README's hosted application do not receive the version represented by the current source, and
-  production observations cannot validate the reviewed code. Source changes can therefore appear complete in the
-  repository while never reaching users.
-- **Recommendation:** Rebuild and publish `docs/` from the current clean source. Then make deployment reproducible: have
-  CI build and publish an artifact directly, or fail CI whenever a clean build changes the tracked `docs/` tree, so
-  source and the Pages payload cannot drift silently.
-
-### 2. Playwright serves stale code and currently fails against the current specs
-
-- **Severity:** Medium
-- **Reference:** `playwright.config.ts:37-40` (related: `package.json:24-25`, `vite.config.ts:8-10`,
-  `playwright/about.spec.ts:10-11`)
-- **Problem:** Playwright starts `npm run preview`, which only serves the existing Vite output from `docs/`; neither the
-  Playwright script nor its `webServer` command builds the application first. Because `docs/` is checked in, a developer
-  can change `src/` and run `npm run playwright:local` while the tests continue to exercise the older committed bundle.
-  In addition, `reuseExistingServer: true` allows any already-running responder on the configured URL to bypass the
-  declared server command entirely. This is an active failure, not only a latent risk: a focused Chromium run of
-  `playwright/about.spec.ts` failed because the current spec looks for `.modal__overlay` at lines 10-11 while the
-  previewed bundle still renders the former `.modal-overlay` DOM.
-- **Impact:** End-to-end results can be false positives (the changed behavior was never exercised) or false negatives
-  (tests expect a source change that is absent from the stale bundle). This undermines the main reliability property of
-  the browser-test workflow.
-- **Recommendation:** Make the Playwright workflow deterministically produce the bundle it serves before starting the
-  preview server. Prefer a dedicated, ignored test output directory so running tests does not rewrite tracked deployment
-  artifacts; alternatively, use the Vite development server when validating a production build is not required. Disable
-  server reuse for deterministic/CI runs, or make reuse an explicit local opt-in.
-
 ### 3. The CSP does not provide its declared framing protection
 
 - **Severity:** Low
