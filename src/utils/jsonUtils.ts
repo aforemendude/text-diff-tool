@@ -1,68 +1,49 @@
-/**
- * Traverses an object and collects all keys (including nested ones) into a sorted array.
- *
- * For arrays, it adds the index as a string.
- */
-function collectSortedKeys(value: unknown): string[] {
-  const keys: Set<string> = new Set();
+const isObject = (value: unknown): value is object => value !== null && typeof value === 'object';
 
-  function traverse(obj: unknown): void {
-    if (obj === null || typeof obj !== 'object') {
-      return;
-    }
+const isEnumerableStringKey = (value: object, key: string | symbol): key is string => {
+  return typeof key === 'string' && Object.prototype.propertyIsEnumerable.call(value, key);
+};
 
-    if (Array.isArray(obj)) {
-      for (let i = 0; i < obj.length; i++) {
-        keys.add(i.toString());
-        traverse(obj[i]);
-      }
-      return;
-    }
+const getOrderedOwnKeys = (value: object): (string | symbol)[] => {
+  const ownKeys = Reflect.ownKeys(value);
+  const orderedJsonKeys = ownKeys.filter((key) => isEnumerableStringKey(value, key)).sort();
+  const otherKeys = ownKeys.filter((key) => !isEnumerableStringKey(value, key));
 
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        keys.add(key);
-        traverse((obj as Record<string, unknown>)[key]);
-      }
-    }
-  }
-
-  traverse(value);
-  return Array.from(keys).sort();
-}
-
-/**
- * Deep copies an object into a structure where all objects are created with Object.create(null) and all arrays are
- * converted to objects with index keys.
- *
- * This is needed to ensure safe handling of JSON objects that have `__proto__` as a key.
- */
-function safeDeepCopy(obj: unknown): unknown {
-  if (obj === null || typeof obj !== 'object') {
-    return obj;
-  }
-
-  if (Array.isArray(obj)) {
-    const result = [];
-    for (let i = 0; i < obj.length; i++) {
-      result[i] = safeDeepCopy(obj[i]);
-    }
-    return result;
-  }
-
-  const result = Object.create(null);
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      result[key] = safeDeepCopy((obj as any)[key]);
-    }
-  }
-  return result;
-}
+  // Include non-enumerable and symbol keys to satisfy Proxy invariants. JSON.stringify ignores them.
+  return [...orderedJsonKeys, ...otherKeys];
+};
 
 /** Stringifies a value with sorted keys for consistent JSON comparison. */
 export function stringifyWithSortedKeys(value: unknown): string {
-  const sortedKeys = collectSortedKeys(value);
-  return JSON.stringify(safeDeepCopy(value), sortedKeys, 2);
+  const proxyCache = new WeakMap<object, object>();
+
+  const getSortingProxy = (currentValue: object): object => {
+    const cachedProxy = proxyCache.get(currentValue);
+    if (cachedProxy !== undefined) {
+      return cachedProxy;
+    }
+
+    const handler: ProxyHandler<object> = {
+      // Accessors should receive the original object, as they do with JSON.stringify(value).
+      get: (target, key) => Reflect.get(target, key, target),
+    };
+
+    if (!Array.isArray(currentValue)) {
+      handler.ownKeys = (target) => getOrderedOwnKeys(target);
+    }
+
+    const proxy = new Proxy(currentValue, handler);
+    proxyCache.set(currentValue, proxy);
+    return proxy;
+  };
+
+  // Wrap each value only when JSON.stringify reaches it, avoiding a cloned object graph and a global replacer key list.
+  return JSON.stringify(
+    value,
+    (_key: string, currentValue: unknown): unknown =>
+      isObject(currentValue) ? getSortingProxy(currentValue) : currentValue,
+    2,
+  );
 }
 
 export interface JsonIssueCounts {

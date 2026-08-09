@@ -13,22 +13,6 @@
 
 ## Findings
 
-### JSON key sorting scales quadratically across arrays of objects
-
-- Severity: **Medium**
-- References: `src/utils/jsonUtils.ts:7-32`; `src/utils/jsonUtils.ts:67-70`
-- Problem: `collectSortedKeys` creates one global list containing every distinct key and every array index in the
-  complete value, then passes that list as `JSON.stringify`'s replacer array. The serializer tests the full property
-  list against every nested object, so even a homogeneous array of objects incurs approximately array-length ×
-  object-count irrelevant property lookups; heterogeneous keys add more. A focused run of the current function over 500,
-  1,000, 2,000, and 4,000 one-key objects with distinct keys took approximately 12 ms, 45 ms, 177 ms, and 742 ms
-  respectively, demonstrating quadratic growth before diffing starts.
-- Impact: Moderately large API arrays can freeze the single browser UI thread for seconds in JSON mode, with memory also
-  spent on a full deep copy and global key set.
-- Recommendation: Sort each object's own entries during a recursive canonicalization pass and serialize the resulting
-  structure without a global replacer array, or use a canonical serializer whose work is proportional to each object's
-  own keys. Preserve the existing null-prototype handling for untrusted keys.
-
 ### Disabling the diff deadline can block the UI indefinitely
 
 - Severity: **Medium**
@@ -75,18 +59,6 @@
 - Recommendation: Normalize character-diff boundaries so they never split a Unicode scalar value, and preferably diff
   grapheme clusters via `Intl.Segmenter`. If retaining the current engine, expand any edit that splits a surrogate pair
   so the complete code point is represented by visible delete/insert segments on the respective sides.
-
-### The safe-copy comment contradicts the implementation's array behavior
-
-- Severity: **Low**
-- References: `src/utils/jsonUtils.ts:35-41`; `src/utils/jsonUtils.ts:47-53`
-- Problem: The comment says all arrays are converted to objects with index keys, but `safeDeepCopy` creates and returns
-  an array. The current behavior is appropriate for preserving JSON array semantics; the stated safety mechanism is
-  simply not what the code does.
-- Impact: A maintainer investigating key ordering or prototype-pollution defenses can form the wrong model of the
-  canonicalized structure and make an unnecessary or behavior-breaking change based on the documentation.
-- Recommendation: Update the comment to state that objects use null prototypes while arrays remain arrays and their
-  elements are copied recursively.
 
 ## Unresolved questions
 

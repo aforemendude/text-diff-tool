@@ -304,7 +304,6 @@ describe('stringifyWithSortedKeys', () => {
   });
 
   it('handles __proto__ key safely', () => {
-    // This tests the safeDeepCopy function's main purpose
     const input = JSON.parse(`{
         "__proto__": { "polluted": true },
         "obj": {}
@@ -318,6 +317,73 @@ describe('stringifyWithSortedKeys', () => {
 }`;
     expect(result).toBe(expected);
     expect(Object.prototype).not.toHaveProperty('polluted');
+  });
+
+  it('sorts imports and exports like every other object', () => {
+    const input = {
+      exports: {
+        node: './index-node.js',
+        import: './index.js',
+        default: './index-fallback.js',
+      },
+      imports: {
+        node: '#utilities-node',
+        default: '#utilities-fallback',
+      },
+    };
+
+    expect(stringifyWithSortedKeys(input)).toBe(`{
+  "exports": {
+    "default": "./index-fallback.js",
+    "import": "./index.js",
+    "node": "./index-node.js"
+  },
+  "imports": {
+    "default": "#utilities-fallback",
+    "node": "#utilities-node"
+  }
+}`);
+  });
+
+  it('serializes the original object without mutating it', () => {
+    let receiver: unknown;
+    const input = {
+      b: 2,
+      a: 1,
+      toJSON() {
+        receiver = this;
+        return { b: this.b, a: this.a };
+      },
+    };
+
+    expect(stringifyWithSortedKeys(input)).toBe(`{
+  "a": 1,
+  "b": 2
+}`);
+    expect(receiver).toBe(input);
+    expect(Object.keys(input)).toEqual(['b', 'a', 'toJSON']);
+  });
+
+  it('sorts frozen objects without violating Proxy invariants', () => {
+    const input = Object.freeze({
+      z: Object.freeze({ b: 2, a: 1 }),
+      a: 0,
+    });
+
+    expect(stringifyWithSortedKeys(input)).toBe(`{
+  "a": 0,
+  "z": {
+    "a": 1,
+    "b": 2
+  }
+}`);
+  });
+
+  it('preserves circular reference detection', () => {
+    const input: { self?: unknown } = {};
+    input.self = input;
+
+    expect(() => stringifyWithSortedKeys(input)).toThrow(TypeError);
   });
 
   it('excludes inherited enumerable properties at every traversal stage', () => {
