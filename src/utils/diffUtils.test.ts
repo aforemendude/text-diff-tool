@@ -86,8 +86,22 @@ describe('computeDiff', () => {
       factory,
     );
 
-    expect(outcome).toMatchObject({
+    expect(outcome).toEqual({
       status: 'success',
+      diffResult: {
+        originalLines: [
+          { lineNumber: 1, type: 'equal', content: '{' },
+          { lineNumber: 2, type: 'modify', content: '  "value": 1', charDiffs: [] },
+          { lineNumber: 3, type: 'equal', content: '}' },
+        ],
+        modifiedLines: [
+          { lineNumber: 1, type: 'equal', content: '{' },
+          { lineNumber: 2, type: 'modify', content: '  "value": 2', charDiffs: [] },
+          { lineNumber: 3, type: 'equal', content: '}' },
+        ],
+        originalTrailingNewline: false,
+        modifiedTrailingNewline: false,
+      },
       warnings: [
         { source: 'original', type: 'numeric-precision', count: 1 },
         { source: 'modified', type: 'numeric-precision', count: 1 },
