@@ -13,22 +13,6 @@
 
 ## Findings
 
-### Distinct JSON numbers can be normalized as identical
-
-- Severity: **Medium**
-- References: `src/utils/diffUtils.ts:29-32`; `src/utils/jsonUtils.ts:67-70`
-- Problem: JSON mode parses every number into a JavaScript `number` and then serializes that value. This loses
-  information from valid JSON numeric tokens. For example, `9007199254740992` and `9007199254740993` both normalize to
-  `9007199254740992`, while `1e400` becomes `Infinity` and is serialized as `null`. `computeDiff` therefore reaches its
-  normalized-string identity check with equal strings for inputs that contain different values (and, in the latter
-  example, different JSON types).
-- Impact: The compare action can display “Identical Content” and hide a meaningful identifier, counter, financial value,
-  or type change. A user relying on JSON mode can miss data changes silently.
-- Recommendation: Canonicalize JSON with a parser that preserves numeric tokens/arbitrary precision, or reject numbers
-  that cannot be represented losslessly and surface a source-specific validation error. At minimum, validate parsed
-  numeric values recursively with `Number.isFinite` and preserve or reject unsafe integers instead of passing their
-  rounded values to `JSON.stringify`.
-
 ### Frozen prototype names are tokenized as different lines
 
 - Severity: **Low**
