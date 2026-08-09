@@ -1,11 +1,10 @@
 import type { CharDiff, DiffCleanupMode, DiffResult, LineDiff } from '../types/diff';
 import { detectJsonIssues, stringifyWithSortedKeys, type JsonIssueCounts } from './jsonUtils';
+import { diffLines } from './lineDiffUtils';
 
 interface DiffEngine {
   Diff_Timeout: number;
   Diff_EditCost: number;
-  diff_linesToChars_(text1: string, text2: string): { chars1: string; chars2: string; lineArray: string[] };
-  diff_charsToLines_(diffs: diff_match_patch.Diff[], lineArray: string[]): void;
   diff_main(text1: string, text2: string, checkLines?: boolean): diff_match_patch.Diff[];
   diff_cleanupSemantic(diffs: diff_match_patch.Diff[]): void;
   diff_cleanupEfficiency(diffs: diff_match_patch.Diff[]): void;
@@ -128,9 +127,7 @@ export function computeDiff(
   const lineText1 = normalizeLineDiffInput(textToCompareOriginal);
   const lineText2 = normalizeLineDiffInput(textToCompareModified);
 
-  const { chars1, chars2, lineArray } = dmp.diff_linesToChars_(lineText1, lineText2);
-  const lineDiffs = dmp.diff_main(chars1, chars2, false);
-  dmp.diff_charsToLines_(lineDiffs, lineArray);
+  const lineDiffs = diffLines(lineText1, lineText2);
 
   const resultOriginal: LineDiff[] = [];
   const resultModified: LineDiff[] = [];
@@ -138,24 +135,23 @@ export function computeDiff(
   let modLineNum = 1;
 
   for (const diff of lineDiffs) {
-    const op = diff[0];
-    const text = diff[1];
-    const lines = text.split('\n').filter((value, index, values) => index < values.length - 1 || value !== '');
+    const op = diff.operation;
 
     if (op === DIFF_EQUAL) {
-      for (const line of lines) {
-        if (line !== '' || text.includes('\n')) {
-          resultOriginal.push({ lineNumber: origLineNum++, type: 'equal', content: line });
-          resultModified.push({ lineNumber: modLineNum++, type: 'equal', content: line });
-        }
+      for (const line of diff.lines) {
+        const content = line.endsWith('\n') ? line.slice(0, -1) : line;
+        resultOriginal.push({ lineNumber: origLineNum++, type: 'equal', content });
+        resultModified.push({ lineNumber: modLineNum++, type: 'equal', content });
       }
     } else if (op === DIFF_DELETE) {
-      for (const line of lines) {
-        resultOriginal.push({ lineNumber: origLineNum++, type: 'delete', content: line });
+      for (const line of diff.lines) {
+        const content = line.endsWith('\n') ? line.slice(0, -1) : line;
+        resultOriginal.push({ lineNumber: origLineNum++, type: 'delete', content });
       }
     } else if (op === DIFF_INSERT) {
-      for (const line of lines) {
-        resultModified.push({ lineNumber: modLineNum++, type: 'insert', content: line });
+      for (const line of diff.lines) {
+        const content = line.endsWith('\n') ? line.slice(0, -1) : line;
+        resultModified.push({ lineNumber: modLineNum++, type: 'insert', content });
       }
     }
   }
