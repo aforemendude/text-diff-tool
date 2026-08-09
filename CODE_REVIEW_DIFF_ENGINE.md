@@ -13,20 +13,6 @@
 
 ## Findings
 
-### The sorted JSON stringifier promises a string when serialization can return `undefined`
-
-- Severity: **Low**
-- References: `src/utils/jsonUtils.ts:17`; `src/utils/jsonUtils.ts:41-46`
-- Problem: `stringifyWithSortedKeys` accepts `unknown` and declares a `string` return type, but it forwards top-level
-  values to `JSON.stringify`, which returns `undefined` for values such as `undefined`, functions, and symbols. The
-  standard-library declaration used by this project also says `string`, so strict type-checking does not expose the
-  mismatch; the helper's existing `undefined` test confirms the runtime result instead.
-- Impact: Callers are told they can use the result as a string and can consequently fail at runtime when the broad
-  exported input contract permits a non-serializable top-level value. The current production caller passes values from
-  `JSON.parse`, so that path cannot currently trigger the mismatch.
-- Recommendation: Return `string | undefined` and require callers to handle failed top-level serialization, or narrow
-  the accepted input type and enforce that contract before calling `JSON.stringify`.
-
 ### The private line encoder misreports changes after its unique-line ceiling
 
 - Severity: **Medium**
