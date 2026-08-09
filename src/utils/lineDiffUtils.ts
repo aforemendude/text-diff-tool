@@ -11,6 +11,34 @@
  * specific language governing permissions and limitations under the License.
  */
 
+/*
+ * Line-sequence port of the Diff Match Patch implementation vendored in `public/diff_match_patch_uncompressed.js`.
+ *
+ * The port retains the behavior of the path previously used by `computeDiff`: encode lines with `diff_linesToChars_`,
+ * call `diff_main` with line checking disabled and an unlimited timeout, then decode with `diff_charsToLines_`. In
+ * particular, it retains Diff Match Patch's containment shortcut, Myers bisect tie-breaking, recursive splitting, and
+ * `diff_cleanupMerge` normalization.
+ *
+ * Deliberate behavioral differences from the vendored implementation:
+ *
+ * - Unique lines are represented by numbers in arrays, not UTF-16 code units in strings. When a new line is encountered
+ *   after its shared line table reaches 40,000 entries for the first input or 65,535 entries for both inputs, the
+ *   vendored encoder turns the remaining suffix into one token; this implementation has no corresponding encoding
+ *   limit.
+ * - A `Map` replaces the vendored plain-object line hash, so every line is a safe key, including `__proto__` and names
+ *   inherited from `Object.prototype`.
+ * - The public result contains `{ operation, lines }` objects instead of Diff Match Patch tuple-like objects whose
+ *   payload is rehydrated into one concatenated string. Line terminators remain attached to individual lines.
+ *
+ * Other behavior-preserving port differences:
+ *
+ * - Numeric ID `0` is usable, so no blank zeroth table entry is reserved to avoid emitting a NUL character.
+ * - Array element comparisons replace string/substring comparisons; subsequence search uses KMP to preserve
+ *   `String#indexOf`'s first-match behavior, and Myers frontier vectors use `Int32Array`.
+ * - Deadline, half-match, and nested line-mode branches are omitted. They were inactive on the original call path
+ *   because `Diff_Timeout` was set to `0` and `diff_main` was called with `checklines` set to `false`.
+ */
+
 export type LineDiffOperation = -1 | 0 | 1;
 
 export interface LineSequenceDiff {
@@ -30,9 +58,9 @@ const EQUAL = 0;
 /**
  * Diff complete lines without encoding their IDs as UTF-16 code units.
  *
- * Diff Match Patch's private line encoder stores each unique line in one code unit, which forces it to collapse the
- * remainder of sufficiently large inputs into a single token. Numeric arrays have no corresponding 40,000-line
- * boundary, while the sequence diff below retains the engine's Myers diff and cleanup behavior.
+ * Lines are split only after LF (`\n`), matching Diff Match Patch: an LF remains attached to its line, a preceding CR
+ * is therefore preserved as part of a CRLF terminator, and a non-empty unterminated final line is returned as-is. Empty
+ * input produces no line token.
  */
 export function diffLines(text1: string, text2: string): LineSequenceDiff[] {
   const lines1 = splitLines(text1);
@@ -59,6 +87,7 @@ export function diffLines(text1: string, text2: string): LineSequenceDiff[] {
   }));
 }
 
+/** Split lines with the same LF-only boundaries and retained terminators as `diff_linesToChars_`. */
 function splitLines(text: string): string[] {
   const lines: string[] = [];
   let lineStart = 0;
@@ -77,6 +106,7 @@ function splitLines(text: string): string[] {
   return lines;
 }
 
+/** Port of the unlimited-timeout, `checklines = false` path through `diff_main`. */
 function diffSequences(values1: number[], values2: number[]): EncodedDiff[] {
   if (sequencesEqual(values1, values2)) {
     return values1.length === 0 ? [] : [{ operation: EQUAL, values: values1 }];
@@ -106,6 +136,7 @@ function diffSequences(values1: number[], values2: number[]): EncodedDiff[] {
   return diffs;
 }
 
+/** Port of `diff_compute_`; half-match and nested line-mode checks are inactive on the retained call path. */
 function computeDiff(values1: number[], values2: number[]): EncodedDiff[] {
   if (values1.length === 0) {
     return [{ operation: INSERT, values: values2 }];
@@ -138,6 +169,7 @@ function computeDiff(values1: number[], values2: number[]): EncodedDiff[] {
   return bisect(values1, values2);
 }
 
+/** Port of `diff_bisect_`, without its inactive deadline check. */
 function bisect(values1: number[], values2: number[]): EncodedDiff[] {
   const length1 = values1.length;
   const length2 = values2.length;
@@ -232,12 +264,14 @@ function bisect(values1: number[], values2: number[]): EncodedDiff[] {
   ];
 }
 
+/** Port of `diff_bisectSplit_`. */
 function bisectSplit(values1: number[], values2: number[], x: number, y: number): EncodedDiff[] {
   return diffSequences(values1.slice(0, x), values2.slice(0, y)).concat(
     diffSequences(values1.slice(x), values2.slice(y)),
   );
 }
 
+/** Array-valued port of `diff_cleanupMerge`. */
 function cleanupMerge(diffs: EncodedDiff[]): void {
   diffs.push({ operation: EQUAL, values: [] });
   let pointer = 0;
@@ -391,6 +425,7 @@ function commonSuffix(values1: number[], values2: number[]): number {
   return length;
 }
 
+/** Find the first complete subsequence, matching the result of `String#indexOf` used by `diff_compute_`. */
 function indexOfSequence(values: number[], searchValues: number[]): number {
   if (searchValues.length === 0) {
     return 0;
