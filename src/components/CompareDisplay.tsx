@@ -62,8 +62,8 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
       }
     }
 
-    // Treat the trailing-newline indicator as a change immediately after the last content line so it receives the
-    // same preceding context as an ordinary changed line.
+    // Treat the trailing-newline indicator as a change immediately after the last content line so it receives the same
+    // preceding context as an ordinary changed line.
     if (trailingNewlineDiffers) {
       for (let i = Math.max(0, totalLines - CONTEXT_LINES); i < totalLines; i++) {
         visibleLines.add(i);
