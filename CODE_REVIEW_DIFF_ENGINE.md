@@ -13,22 +13,6 @@
 
 ## Findings
 
-### Disabling the diff deadline can block the UI indefinitely
-
-- Severity: **Medium**
-- References: `src/utils/diffUtils.ts:71-73`; `src/utils/diffUtils.ts:80-82`; `src/utils/diffUtils.ts:127-131`;
-  `src/App.tsx:33-35`
-- Problem: Every comparison explicitly sets `Diff_Timeout` to `0`, which the shipped engine defines as an infinite
-  deadline. The dependency also disables its half-match speedup in this mode to avoid a non-optimal result. Both the
-  initial line diff and every paired character diff run synchronously inside the Compare click handler, and neither
-  input size nor work is bounded.
-- Impact: Large or adversarial lines can monopolize the browser's main thread with no way to cancel. In a focused engine
-  run, two unrelated pseudo-random 12,000-character lines already took about 2.5 seconds on the review environment;
-  runtime grows rapidly with input size.
-- Recommendation: Keep a finite deadline and accept a coarser but valid fallback diff when it expires, or move
-  computation to a cancellable Web Worker. Add explicit input/work limits if fully optimal, synchronous diffs are a
-  requirement.
-
 ### The private line encoder misreports changes after its unique-line ceiling
 
 - Severity: **Medium**
