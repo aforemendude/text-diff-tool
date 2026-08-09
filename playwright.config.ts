@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const previewBaseURL = 'http://localhost:4173';
+const configuredBaseURL = process.env.BASE_URL;
+const baseURL = configuredBaseURL || previewBaseURL;
+
 export default defineConfig({
   testDir: './playwright',
   fullyParallel: true,
@@ -8,7 +12,7 @@ export default defineConfig({
   workers: 10,
   reporter: 'html',
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:4173',
+    baseURL,
     trace: 'on-first-retry',
   },
 
@@ -34,9 +38,13 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'npm run preview',
-    url: 'http://localhost:4173',
-    reuseExistingServer: true,
-  },
+  // A configured URL is owned by the caller and must already be running. Otherwise Playwright starts the production
+  // preview server for the duration of the test run.
+  webServer: configuredBaseURL
+    ? undefined
+    : {
+        command: 'npm run preview',
+        url: previewBaseURL,
+        reuseExistingServer: true,
+      },
 });

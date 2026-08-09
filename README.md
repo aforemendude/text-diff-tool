@@ -92,6 +92,13 @@ Run the Playwright end-to-end tests (the production build runs first, then the p
 npm run integration
 ```
 
+To test against an already-running development server, set `BASE_URL` and invoke Playwright directly. This skips both
+the production build and preview server. Extra arguments can select a focused spec or browser:
+
+```bash
+BASE_URL=http://localhost:5173 npx playwright test playwright/about.spec.ts --project=chromium
+```
+
 Run the Vitest unit tests:
 
 ```bash
