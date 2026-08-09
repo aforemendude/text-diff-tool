@@ -48,6 +48,7 @@ test.describe('Line Ending Diff', () => {
 
     // The unchanged content line should not also be styled as a modification.
     await expect(page.locator('.diff-line--delete, .diff-line--insert')).toHaveCount(0);
+    await expect(page.locator('.diff-line__text')).toHaveText(['Line 1', 'Line 1']);
   });
 
   test('does not show trailing newline indicator when both have trailing newline', async ({ page }) => {

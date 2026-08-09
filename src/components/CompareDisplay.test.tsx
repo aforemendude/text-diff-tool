@@ -284,6 +284,24 @@ describe('CompareDisplay', () => {
     expect(classes(equalTrailingState, 'compare-display__trailing-newline')).toEqual([]);
   });
 
+  it('shows three preceding context lines for a trailing-newline-only change', () => {
+    const lines = equalLines(5);
+    const markup = renderToStaticMarkup(<CompareDisplay diffResult={result(lines, lines, false, true)} />);
+
+    expect([...markup.matchAll(/class="compare-display__collapsed-text">([^<]*)/g)].map((match) => match[1])).toEqual([
+      '2 unchanged lines hidden',
+    ]);
+    expect([...markup.matchAll(/class="diff-line__number">([^<]*)/g)].map((match) => match[1])).toEqual([
+      '3',
+      '3',
+      '4',
+      '4',
+      '5',
+      '5',
+    ]);
+    expect(classes(markup, 'compare-display__row')).toHaveLength(4);
+  });
+
   it('rejects an impossible character-diff side combination', () => {
     const invalid: LineDiff = {
       lineNumber: 1,
