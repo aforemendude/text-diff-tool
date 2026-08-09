@@ -26,7 +26,7 @@ function createWarningMessage(warnings: JsonWarning[]): string {
       .filter((warning) => warning.source === source)
       .map((warning) => {
         if (warning.type === 'numeric-precision') {
-          return `• ${warning.count} ${warning.count === 1 ? 'number' : 'numbers'} may change — the parsed value may be rounded or become null.`;
+          return `• ${warning.count} ${warning.count === 1 ? 'number' : 'numbers'} may change — the parsed value may be rounded or converted to null.`;
         }
 
         return `• ${warning.count} duplicate ${warning.count === 1 ? 'key' : 'keys'} — only the last value for that key will be kept.`;
