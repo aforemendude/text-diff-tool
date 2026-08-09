@@ -57,6 +57,30 @@ test.describe('Text Mode Comparison', () => {
     await expect(addedLine).toBeVisible();
   });
 
+  test('keeps inherited prototype names equal on unchanged final lines', async ({ page }) => {
+    expect(await page.evaluate(() => Object.isFrozen(Object.prototype))).toBe(true);
+
+    for (const inheritedName of ['constructor', 'toString', 'hasOwnProperty', '__proto__']) {
+      await page.locator('#original').fill(`old\n${inheritedName}`);
+      await page.locator('#modified').fill(`new\n${inheritedName}`);
+      await page.locator('#compare-btn').click();
+
+      const rows = page.locator('.compare-display__row');
+      await expect(rows).toHaveCount(2);
+
+      const changedLines = rows.first().locator('.diff-line');
+      await expect(changedLines.nth(0)).toHaveClass(/diff-line--delete/);
+      await expect(changedLines.nth(1)).toHaveClass(/diff-line--insert/);
+
+      const unchangedLines = rows.nth(1).locator('.diff-line');
+      await expect(unchangedLines.nth(0)).toHaveClass('diff-line');
+      await expect(unchangedLines.nth(1)).toHaveClass('diff-line');
+      await expect(unchangedLines.locator('.diff-line__text')).toHaveText([inheritedName, inheritedName]);
+
+      await page.locator('#compare-btn').click();
+    }
+  });
+
   test('handles empty input gracefully', async ({ page }) => {
     // Both empty
     await page.locator('#compare-btn').click();

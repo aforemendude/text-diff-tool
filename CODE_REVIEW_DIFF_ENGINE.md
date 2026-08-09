@@ -13,22 +13,6 @@
 
 ## Findings
 
-### Frozen prototype names are tokenized as different lines
-
-- Severity: **Low**
-- References: `src/utils/diffUtils.ts:80-82`; `src/diff_match_patch.d.ts:50-52`; `src/main.tsx:6-7`
-- Problem: Production freezes `Object.prototype`, while the dependency's private line encoder uses a plain object as a
-  line-to-token hash. An unterminated final line whose complete content is an inherited property name such as
-  `constructor`, `toString`, `hasOwnProperty`, or `__proto__` cannot be installed as an own hash key, so the identical
-  line on the other side receives a different token. With original `old\nconstructor` and modified `new\nconstructor`,
-  the current production setup labels both `constructor` rows as modified and produces an entirely equal character diff
-  for them.
-- Impact: Comparisons of source code or property lists can falsely highlight a legitimate unchanged final line. The
-  behavior also depends on a non-obvious initialization side effect outside the diff module.
-- Recommendation: Replace the private line encoder with an application-owned implementation backed by `Map` or a
-  null-prototype object, or use a supported dependency API/version whose line hashing safely accepts arbitrary strings.
-  Retain the desired prototype-pollution defense independently of the diff algorithm.
-
 ### Appending lines falsely marks the former final line as modified
 
 - Severity: **Medium**
