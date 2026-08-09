@@ -181,16 +181,20 @@ describe('App', () => {
     expect(setters[8]).toHaveBeenCalledExactlyOnceWith(outcome);
     expect(setters[7]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
-      title: 'JSON Warning (10 Issues)',
+      title: 'JSON Parse Warning - 10 Issues',
       message: [
-        'The JSON is valid, but the following issues were detected:',
+        'Both texts contain valid JSON, but parsing them may change some of their contents.',
         '',
-        '• Original numeric precision issues: 2',
-        '• Modified numeric precision issues: 3',
-        '• Original duplicate key issues: 1',
-        '• Modified duplicate key issues: 4',
+        'Original Text',
         '',
-        'JSON.parse may round numeric values and keeps only the last value for a duplicate object key.',
+        '• 2 numbers may change — the parsed value may be rounded or become null.',
+        '• 1 duplicate key — only the last value for that key will be kept.',
+        '',
+        'Modified Text',
+        '',
+        '• 3 numbers may change — the parsed value may be rounded or become null.',
+        '• 4 duplicate keys — only the last value for that key will be kept.',
+        '',
         'Close this warning to continue the comparison with the parsed values.',
       ].join('\n'),
       variant: 'warning',
@@ -202,7 +206,7 @@ describe('App', () => {
   it('continues a pending successful diff when the warning modal closes', () => {
     const pendingOutcome = { status: 'success' as const, diffResult };
     const { tree, setters } = renderApp({
-      modalState: { isOpen: true, title: 'JSON Warning (1 Issue)', message: 'Warning', variant: 'warning' },
+      modalState: { isOpen: true, title: 'JSON Parse Warning - 1 Issue', message: 'Warning', variant: 'warning' },
       pendingOutcome,
     });
     const modal = findElement(tree, (element) => element.type === 'mock-modal');
@@ -223,7 +227,7 @@ describe('App', () => {
 
   it('continues a pending identical result into the existing informational modal', () => {
     const { tree, setters } = renderApp({
-      modalState: { isOpen: true, title: 'JSON Warning (1 Issue)', message: 'Warning', variant: 'warning' },
+      modalState: { isOpen: true, title: 'JSON Parse Warning - 1 Issue', message: 'Warning', variant: 'warning' },
       pendingOutcome: { status: 'identical' },
     });
 

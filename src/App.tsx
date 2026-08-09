@@ -21,18 +21,28 @@ const closedModalState: ModalState = {
 };
 
 function createWarningMessage(warnings: JsonWarning[]): string {
-  const warningLines = warnings.map((warning) => {
-    const sourceLabel = warning.source === 'original' ? 'Original' : 'Modified';
-    const issueLabel = warning.type === 'numeric-precision' ? 'numeric precision' : 'duplicate key';
-    return `• ${sourceLabel} ${issueLabel} issues: ${warning.count}`;
+  const warningSections = (['original', 'modified'] as const).flatMap((source) => {
+    const warningLines = warnings
+      .filter((warning) => warning.source === source)
+      .map((warning) => {
+        if (warning.type === 'numeric-precision') {
+          return `• ${warning.count} ${warning.count === 1 ? 'number' : 'numbers'} may change — the parsed value may be rounded or become null.`;
+        }
+
+        return `• ${warning.count} duplicate ${warning.count === 1 ? 'key' : 'keys'} — only the last value for that key will be kept.`;
+      });
+
+    if (warningLines.length === 0) {
+      return [];
+    }
+
+    return [source === 'original' ? 'Original Text' : 'Modified Text', '', ...warningLines, ''];
   });
 
   return [
-    'The JSON is valid, but the following issues were detected:',
+    'Both texts contain valid JSON, but parsing them may change some of their contents.',
     '',
-    ...warningLines,
-    '',
-    'JSON.parse may round numeric values and keeps only the last value for a duplicate object key.',
+    ...warningSections,
     'Close this warning to continue the comparison with the parsed values.',
   ].join('\n');
 }
@@ -88,7 +98,7 @@ function App() {
         setPendingOutcome(outcome);
         setModalState({
           isOpen: true,
-          title: `JSON Warning (${issueCount} ${issueCount === 1 ? 'Issue' : 'Issues'})`,
+          title: `JSON Parse Warning - ${issueCount} ${issueCount === 1 ? 'Issue' : 'Issues'}`,
           message: createWarningMessage(outcome.warnings),
           variant: 'warning',
         });

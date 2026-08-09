@@ -75,11 +75,24 @@ test.describe('JSON Mode Comparison', () => {
     await page.locator('#compare-btn').click();
 
     const warningModal = page.locator('.modal');
-    await expect(warningModal.getByText('JSON Warning (4 Issues)')).toBeVisible();
-    await expect(warningModal).toContainText('Original numeric precision issues: 1');
-    await expect(warningModal).toContainText('Modified numeric precision issues: 1');
-    await expect(warningModal).toContainText('Original duplicate key issues: 1');
-    await expect(warningModal).toContainText('Modified duplicate key issues: 1');
+    await expect(warningModal.getByText('JSON Parse Warning - 4 Issues')).toBeVisible();
+    await expect(warningModal.locator('.modal__message')).toHaveText(
+      [
+        'Both texts contain valid JSON, but parsing them may change some of their contents.',
+        '',
+        'Original Text',
+        '',
+        '• 1 number may change — the parsed value may be rounded or become null.',
+        '• 1 duplicate key — only the last value for that key will be kept.',
+        '',
+        'Modified Text',
+        '',
+        '• 1 number may change — the parsed value may be rounded or become null.',
+        '• 1 duplicate key — only the last value for that key will be kept.',
+        '',
+        'Close this warning to continue the comparison with the parsed values.',
+      ].join('\n'),
+    );
     await expect(page.locator('.compare-display')).not.toBeVisible();
 
     await warningModal.getByRole('button', { name: 'Continue' }).click();
@@ -102,7 +115,7 @@ test.describe('JSON Mode Comparison', () => {
     // Should show error modal
     await expect(page.locator('.modal__title')).toContainText('JSON Parse Error');
     await expect(page.getByText('Failed to parse the modified text as JSON')).toBeVisible();
-    await expect(page.getByText(/JSON Warning/)).not.toBeVisible();
+    await expect(page.getByText(/JSON Parse Warning/)).not.toBeVisible();
   });
 
   test('handles arrays: sorts keys within objects but preserves array order', async ({ page }) => {
