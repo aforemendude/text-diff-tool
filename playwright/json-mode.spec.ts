@@ -68,8 +68,30 @@ test.describe('JSON Mode Comparison', () => {
     await expect(compareDisplay).toContainText('"value": 200');
   });
 
+  test('warns once with counts for precision and duplicate-key issues, then continues the diff', async ({ page }) => {
+    await page.locator('#original').fill('{"large":9007199254740993,"same":1,"same":2}');
+    await page.locator('#modified').fill('{"large":9007199254740995,"same":1,"same":3}');
+
+    await page.locator('#compare-btn').click();
+
+    const warningModal = page.locator('.modal');
+    await expect(warningModal.getByText('JSON Warning (4 Issues)')).toBeVisible();
+    await expect(warningModal).toContainText('Original numeric precision issues: 1');
+    await expect(warningModal).toContainText('Modified numeric precision issues: 1');
+    await expect(warningModal).toContainText('Original duplicate key issues: 1');
+    await expect(warningModal).toContainText('Modified duplicate key issues: 1');
+    await expect(page.locator('.compare-display')).not.toBeVisible();
+
+    await warningModal.getByRole('button', { name: 'Continue' }).click();
+
+    const compareDisplay = page.locator('.compare-display');
+    await expect(compareDisplay).toBeVisible();
+    await expect(compareDisplay).toContainText('"same": 2');
+    await expect(compareDisplay).toContainText('"same": 3');
+  });
+
   test('shows error for invalid JSON', async ({ page }) => {
-    const validJson = '{"foo": "bar"}';
+    const validJson = '{"id": 9007199254740993, "id": 1}';
     const invalidJson = '{"foo": "bar"'; // Missing closing brace
 
     await page.locator('#original').fill(validJson);
@@ -80,6 +102,7 @@ test.describe('JSON Mode Comparison', () => {
     // Should show error modal
     await expect(page.locator('.modal__title')).toContainText('JSON Parse Error');
     await expect(page.getByText('Failed to parse the modified text as JSON')).toBeVisible();
+    await expect(page.getByText(/JSON Warning/)).not.toBeVisible();
   });
 
   test('handles arrays: sorts keys within objects but preserves array order', async ({ page }) => {

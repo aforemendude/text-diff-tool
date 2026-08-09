@@ -1,5 +1,5 @@
 import type { CharDiff, DiffCleanupMode, DiffResult, LineDiff } from '../types/diff';
-import { stringifyWithSortedKeys } from './jsonUtils';
+import { detectJsonIssues, stringifyWithSortedKeys, type JsonIssueCounts } from './jsonUtils';
 
 interface DiffEngine {
   Diff_Timeout: number;
@@ -17,18 +17,33 @@ export interface ComputeDiffOptions {
   editCost: number;
 }
 
+export interface JsonWarning {
+  source: 'original' | 'modified';
+  type: 'numeric-precision' | 'duplicate-keys';
+  count: number;
+}
+
 export type ComputeDiffOutcome =
-  | { status: 'success'; diffResult: DiffResult }
-  | { status: 'identical' }
+  | { status: 'success'; diffResult: DiffResult; warnings?: JsonWarning[] }
+  | { status: 'identical'; warnings?: JsonWarning[] }
   | { status: 'error'; source: 'original' | 'modified'; message: string };
 
 export type DiffEngineFactory = () => DiffEngine;
 
 const createDiffEngine: DiffEngineFactory = () => new diff_match_patch();
 
-function parseJson(text: string, source: 'original' | 'modified'): string | ComputeDiffOutcome {
+interface ParsedJson {
+  normalizedText: string;
+  issueCounts: JsonIssueCounts;
+}
+
+function parseJson(text: string, source: 'original' | 'modified'): ParsedJson | ComputeDiffOutcome {
   try {
-    return stringifyWithSortedKeys(JSON.parse(text));
+    const parsedValue: unknown = JSON.parse(text);
+    return {
+      normalizedText: stringifyWithSortedKeys(parsedValue),
+      issueCounts: detectJsonIssues(text),
+    };
   } catch (error) {
     return {
       status: 'error',
@@ -36,6 +51,29 @@ function parseJson(text: string, source: 'original' | 'modified'): string | Comp
       message: error instanceof Error ? error.message : 'Unknown error',
     };
   }
+}
+
+function collectJsonWarnings(original: JsonIssueCounts, modified: JsonIssueCounts): JsonWarning[] {
+  const warnings: JsonWarning[] = [];
+
+  if (original.numericPrecision > 0) {
+    warnings.push({ source: 'original', type: 'numeric-precision', count: original.numericPrecision });
+  }
+  if (modified.numericPrecision > 0) {
+    warnings.push({ source: 'modified', type: 'numeric-precision', count: modified.numericPrecision });
+  }
+  if (original.duplicateKeys > 0) {
+    warnings.push({ source: 'original', type: 'duplicate-keys', count: original.duplicateKeys });
+  }
+  if (modified.duplicateKeys > 0) {
+    warnings.push({ source: 'modified', type: 'duplicate-keys', count: modified.duplicateKeys });
+  }
+
+  return warnings;
+}
+
+function addWarnings<T extends { status: 'success' | 'identical' }>(outcome: T, warnings: JsonWarning[]): T {
+  return warnings.length === 0 ? outcome : { ...outcome, warnings };
 }
 
 export function computeDiff(
@@ -46,23 +84,26 @@ export function computeDiff(
 ): ComputeDiffOutcome {
   let textToCompareOriginal = originalText;
   let textToCompareModified = modifiedText;
+  let jsonWarnings: JsonWarning[] = [];
 
   if (isJsonMode) {
     const parsedOriginal = parseJson(originalText, 'original');
-    if (typeof parsedOriginal !== 'string') {
+    if ('status' in parsedOriginal) {
       return parsedOriginal;
     }
-    textToCompareOriginal = parsedOriginal;
 
     const parsedModified = parseJson(modifiedText, 'modified');
-    if (typeof parsedModified !== 'string') {
+    if ('status' in parsedModified) {
       return parsedModified;
     }
-    textToCompareModified = parsedModified;
+
+    textToCompareOriginal = parsedOriginal.normalizedText;
+    textToCompareModified = parsedModified.normalizedText;
+    jsonWarnings = collectJsonWarnings(parsedOriginal.issueCounts, parsedModified.issueCounts);
   }
 
   if (textToCompareOriginal === textToCompareModified) {
-    return { status: 'identical' };
+    return addWarnings({ status: 'identical' }, jsonWarnings);
   }
 
   const originalHasTrailingNewline = textToCompareOriginal.endsWith('\n');
@@ -171,13 +212,16 @@ export function computeDiff(
     }
   }
 
-  return {
-    status: 'success',
-    diffResult: {
-      originalLines: processedOriginal,
-      modifiedLines: processedModified,
-      originalTrailingNewline: originalHasTrailingNewline,
-      modifiedTrailingNewline: modifiedHasTrailingNewline,
+  return addWarnings(
+    {
+      status: 'success',
+      diffResult: {
+        originalLines: processedOriginal,
+        modifiedLines: processedModified,
+        originalTrailingNewline: originalHasTrailingNewline,
+        modifiedTrailingNewline: modifiedHasTrailingNewline,
+      },
     },
-  };
+    jsonWarnings,
+  );
 }

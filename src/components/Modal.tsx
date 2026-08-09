@@ -6,7 +6,7 @@ interface ModalProps {
   message?: string;
   children?: ReactNode;
   onClose: () => void;
-  variant?: 'error' | 'info';
+  variant?: 'error' | 'info' | 'warning';
   className?: string;
   bodyClassName?: string;
   actionLabel?: string;
@@ -22,7 +22,7 @@ function Modal({
   bodyClassName,
   actionLabel = 'OK',
 }: ModalProps) {
-  const titleClass = variant === 'info' ? 'modal__title modal__title--info' : 'modal__title';
+  const titleClass = variant === 'error' ? 'modal__title' : `modal__title modal__title--${variant}`;
   const modalClass = className ? `modal ${className}` : 'modal';
   const bodyClass = bodyClassName ? `modal__body ${bodyClassName}` : 'modal__body';
 

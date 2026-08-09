@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { stringifyWithSortedKeys } from './jsonUtils';
+import { detectJsonIssues, stringifyWithSortedKeys } from './jsonUtils';
 
 describe('stringifyWithSortedKeys', () => {
   describe('primitive values', () => {
@@ -336,5 +336,44 @@ describe('stringifyWithSortedKeys', () => {
   null,
   null
 ]`);
+  });
+});
+
+describe('detectJsonIssues', () => {
+  it('does not flag stable JSON numbers or keys reused in separate objects', () => {
+    const text = `{
+      "integer": 9007199254740991,
+      "decimal": 0.1,
+      "equivalentDecimal": 1.000,
+      "objects": [{"id": 1}, {"id": 2}],
+      "numberInAString": "9007199254740993"
+    }`;
+
+    expect(detectJsonIssues(text)).toEqual({ numericPrecision: 0, duplicateKeys: 0 });
+  });
+
+  it('counts unsafe, rounded, overflowing, and underflowing number tokens', () => {
+    const text = `[
+      9007199254740992,
+      9007199254740993,
+      1.0000000000000001,
+      1e400,
+      1e-400,
+      123.45
+    ]`;
+
+    expect(detectJsonIssues(text)).toEqual({ numericPrecision: 5, duplicateKeys: 0 });
+  });
+
+  it('counts each repeated decoded key within its own object scope', () => {
+    const text = `{
+      "same": 1,
+      "s\\u0061me": 2,
+      "same": 3,
+      "nested": {"key": 1, "key": 2},
+      "items": [{"id": 1, "id": 2}, {"id": 3}]
+    }`;
+
+    expect(detectJsonIssues(text)).toEqual({ numericPrecision: 0, duplicateKeys: 4 });
   });
 });

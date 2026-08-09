@@ -70,6 +70,42 @@ describe('computeDiff', () => {
     expect(factory).not.toHaveBeenCalled();
   });
 
+  it('warns for both source numbers when distinct unsafe integers normalize as identical', () => {
+    const factory = vi.fn();
+
+    expect(
+      computeDiff('{"id":9007199254740992}', '{"id":9007199254740993}', { ...options, isJsonMode: true }, factory),
+    ).toEqual({
+      status: 'identical',
+      warnings: [
+        { source: 'original', type: 'numeric-precision', count: 1 },
+        { source: 'modified', type: 'numeric-precision', count: 1 },
+      ],
+    });
+    expect(factory).not.toHaveBeenCalled();
+  });
+
+  it('reports all four source and issue categories while retaining the current diff result', () => {
+    const { factory } = createEngineHarness([diff(-1, 'old\n'), diff(1, 'new\n')]);
+    const outcome = computeDiff(
+      '{"value":9007199254740993,"value":1}',
+      '{"value":9007199254740995,"value":2}',
+      { ...options, isJsonMode: true },
+      factory,
+    );
+
+    expect(outcome).toMatchObject({
+      status: 'success',
+      warnings: [
+        { source: 'original', type: 'numeric-precision', count: 1 },
+        { source: 'modified', type: 'numeric-precision', count: 1 },
+        { source: 'original', type: 'duplicate-keys', count: 1 },
+        { source: 'modified', type: 'duplicate-keys', count: 1 },
+      ],
+    });
+    expect(factory).toHaveBeenCalledOnce();
+  });
+
   it('passes exact sorted, formatted JSON to the engine when valid values differ', () => {
     const { engine, factory } = createEngineHarness([diff(-1, 'old\n'), diff(1, 'new\n')]);
 
@@ -107,6 +143,20 @@ describe('computeDiff', () => {
       expect(factory).not.toHaveBeenCalled();
     },
   );
+
+  it('returns a parse error instead of valid-input warnings when the other source is invalid', () => {
+    const factory = vi.fn();
+    const outcome = computeDiff(
+      '{"id":9007199254740993,"id":1}',
+      '{invalid',
+      { ...options, isJsonMode: true },
+      factory,
+    );
+
+    expect(outcome).toMatchObject({ status: 'error', source: 'modified' });
+    expect(outcome).not.toHaveProperty('warnings');
+    expect(factory).not.toHaveBeenCalled();
+  });
 
   it('maps line and character operations into aligned results and configures the engine exactly', () => {
     const lineDiffs = [diff(0, 'same\n'), diff(-1, 'old\norphan\n'), diff(1, 'other\n')];
