@@ -13,23 +13,6 @@
 
 ## Findings
 
-### Appending lines falsely marks the former final line as modified
-
-- Severity: **Medium**
-- References: `src/utils/diffUtils.ts:68-82`; `src/utils/diffUtils.ts:126-151`
-- Problem: The line encoder treats a line's terminating newline as part of its token. When text without a trailing
-  newline gains another line, the unchanged former last line changes from (for example) `a` to the encoded token `a\n`.
-  The code later pairs the resulting delete/insert lines and unconditionally labels both as `modify`, even when the
-  character diff contains only an equal `a`. The current implementation returns a modified `a` row plus an inserted `b`
-  row for original `a` and modified `a\nb`; the `a` row did not change.
-- Impact: Common append/remove-at-EOF comparisons show red/green modification styling for unchanged content. A
-  trailing-newline-only change likewise marks the final content line as modified in addition to the dedicated
-  trailing-newline indicator, undermining the accuracy of the primary visualization.
-- Recommendation: Tokenize logical line content independently from line terminators while retaining the existing
-  trailing-newline flags, or normalize terminators before line encoding. As a defensive step, classify a paired
-  delete/insert as equal when both reconstructed contents are equal rather than emitting a `modify` row whose character
-  diff is entirely equal.
-
 ### JSON key sorting scales quadratically across arrays of objects
 
 - Severity: **Medium**
