@@ -2,23 +2,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { findElement, findElements } from './test/reactElements';
 import type { DiffCleanupMode, DiffResult } from './types/diff';
 import type { ComputeDiffOutcome, JsonWarning } from './utils/diffUtils';
+import type { DiffProcess } from './workers/diffWorkerClient';
 import App from './App';
 
-const reactMocks = vi.hoisted(() => ({ useState: vi.fn() }));
-const diffMocks = vi.hoisted(() => ({ computeDiff: vi.fn() }));
+const reactMocks = vi.hoisted(() => ({ useEffect: vi.fn(), useRef: vi.fn(), useState: vi.fn() }));
+const workerMocks = vi.hoisted(() => ({ startDiffProcess: vi.fn() }));
 
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
+  useEffect: reactMocks.useEffect,
+  useRef: reactMocks.useRef,
   useState: reactMocks.useState,
 }));
 
-vi.mock('./utils/diffUtils', () => ({ computeDiff: diffMocks.computeDiff }));
+vi.mock('./workers/diffWorkerClient', () => ({ startDiffProcess: workerMocks.startDiffProcess }));
 
 vi.mock('./components', () => ({
   Header: 'mock-header',
   TextAreas: 'mock-text-areas',
   CompareDisplay: 'mock-compare-display',
   Modal: 'mock-modal',
+  ProcessingModal: 'mock-processing-modal',
 }));
 
 interface AppState {
@@ -36,6 +40,8 @@ interface AppState {
     variant: 'error' | 'info' | 'warning';
   };
   pendingOutcome: Exclude<ComputeDiffOutcome, { status: 'error' }> | null;
+  isProcessing: boolean;
+  activeProcess: DiffProcess | null;
 }
 
 const diffResult: DiffResult = {
@@ -45,7 +51,28 @@ const diffResult: DiffResult = {
   modifiedTrailingNewline: false,
 };
 
-function renderApp(overrides: Partial<AppState> = {}) {
+interface DeferredProcess {
+  process: DiffProcess;
+  resolve: (outcome: ComputeDiffOutcome) => void;
+  reject: (error: unknown) => void;
+}
+
+function createDeferredProcess(): DeferredProcess {
+  let resolve: (outcome: ComputeDiffOutcome) => void = () => undefined;
+  let reject: (error: unknown) => void = () => undefined;
+  const outcome = new Promise<ComputeDiffOutcome>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return {
+    process: { outcome, terminate: vi.fn() },
+    resolve,
+    reject,
+  };
+}
+
+function renderApp(overrides: Partial<AppState> = {}, existingProcessRef?: { current: DiffProcess | null }) {
   const state: AppState = {
     originalText: '',
     modifiedText: '',
@@ -56,6 +83,8 @@ function renderApp(overrides: Partial<AppState> = {}) {
     editCost: 4,
     modalState: { isOpen: false, title: '', message: '', variant: 'error' },
     pendingOutcome: null,
+    isProcessing: false,
+    activeProcess: null,
     ...overrides,
   };
   const values = [
@@ -68,18 +97,27 @@ function renderApp(overrides: Partial<AppState> = {}) {
     state.editCost,
     state.modalState,
     state.pendingOutcome,
+    state.isProcessing,
   ];
   const setters = values.map(() => vi.fn());
   let index = 0;
   reactMocks.useState.mockImplementation(() => [values[index], setters[index++]]);
+  const processRef = existingProcessRef ?? { current: state.activeProcess };
+  reactMocks.useRef.mockReturnValue(processRef);
+  let effectCleanup: (() => void) | undefined;
+  reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => {
+    effectCleanup = effect() ?? undefined;
+  });
 
-  return { tree: App(), setters };
+  return { tree: App(), setters, processRef, getEffectCleanup: () => effectCleanup };
 }
 
 describe('App', () => {
   beforeEach(() => {
+    reactMocks.useEffect.mockReset();
+    reactMocks.useRef.mockReset();
     reactMocks.useState.mockReset();
-    diffMocks.computeDiff.mockReset();
+    workerMocks.startDiffProcess.mockReset();
   });
 
   it('renders the edit view and forwards each state owner to the matching child prop', () => {
@@ -105,10 +143,12 @@ describe('App', () => {
     });
     expect(findElements(tree, (element) => element.type === 'mock-compare-display')).toEqual([]);
     expect(findElements(tree, (element) => element.type === 'mock-modal')).toEqual([]);
+    expect(findElements(tree, (element) => element.type === 'mock-processing-modal')).toEqual([]);
   });
 
-  it('stores a successful diff and enters compare mode', () => {
-    diffMocks.computeDiff.mockReturnValue({ status: 'success', diffResult });
+  it('runs the diff in a worker, then stores a successful result and enters compare mode', async () => {
+    const deferred = createDeferredProcess();
+    workerMocks.startDiffProcess.mockReturnValue(deferred.process);
     const { tree, setters } = renderApp({
       originalText: 'before',
       modifiedText: 'after',
@@ -120,21 +160,32 @@ describe('App', () => {
 
     (header.props.onToggleMode as () => void)();
 
-    expect(diffMocks.computeDiff).toHaveBeenCalledExactlyOnceWith('before', 'after', {
+    expect(workerMocks.startDiffProcess).toHaveBeenCalledExactlyOnceWith('before', 'after', {
       isJsonMode: true,
       diffCleanupMode: 'efficiency',
       editCost: 8,
     });
+    expect(setters[9]).toHaveBeenCalledExactlyOnceWith(true);
+    expect(setters[2]).not.toHaveBeenCalled();
+    expect(setters[3]).not.toHaveBeenCalled();
+
+    deferred.resolve({ status: 'success', diffResult });
+    await deferred.process.outcome;
+
+    expect(setters[9]).toHaveBeenLastCalledWith(false);
     expect(setters[2]).toHaveBeenCalledExactlyOnceWith(diffResult);
     expect(setters[3]).toHaveBeenCalledExactlyOnceWith(true);
     expect(setters[7]).not.toHaveBeenCalled();
   });
 
-  it('opens the exact informational modal and stays in edit mode for identical content', () => {
-    diffMocks.computeDiff.mockReturnValue({ status: 'identical' });
+  it('opens the exact informational modal and stays in edit mode for identical content', async () => {
+    const deferred = createDeferredProcess();
+    workerMocks.startDiffProcess.mockReturnValue(deferred.process);
     const { tree, setters } = renderApp({ originalText: 'same', modifiedText: 'same' });
 
     (findElement(tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
+    deferred.resolve({ status: 'identical' });
+    await deferred.process.outcome;
 
     expect(setters[7]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
@@ -149,11 +200,14 @@ describe('App', () => {
   it.each([
     ['original' as const, 'Original'],
     ['modified' as const, 'Modified'],
-  ])('opens an exact parse-error modal for the %s input', (source, sourceLabel) => {
-    diffMocks.computeDiff.mockReturnValue({ status: 'error', source, message: 'invalid JSON' });
+  ])('opens an exact parse-error modal for the %s input', async (source, sourceLabel) => {
+    const deferred = createDeferredProcess();
+    workerMocks.startDiffProcess.mockReturnValue(deferred.process);
     const { tree, setters } = renderApp({ isJsonMode: true });
 
     (findElement(tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
+    deferred.resolve({ status: 'error', source, message: 'invalid JSON' });
+    await deferred.process.outcome;
 
     expect(setters[7]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
@@ -165,7 +219,7 @@ describe('App', () => {
     expect(setters[3]).not.toHaveBeenCalled();
   });
 
-  it('opens one counted warning containing all detected categories and defers a successful diff', () => {
+  it('opens one counted warning containing all detected categories and defers a successful diff', async () => {
     const warnings: JsonWarning[] = [
       { source: 'original', type: 'numeric-precision', count: 2 },
       { source: 'modified', type: 'numeric-precision', count: 3 },
@@ -173,10 +227,13 @@ describe('App', () => {
       { source: 'modified', type: 'duplicate-keys', count: 4 },
     ];
     const outcome = { status: 'success' as const, diffResult, warnings };
-    diffMocks.computeDiff.mockReturnValue(outcome);
+    const deferred = createDeferredProcess();
+    workerMocks.startDiffProcess.mockReturnValue(deferred.process);
     const { tree, setters } = renderApp({ isJsonMode: true });
 
     (findElement(tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
+    deferred.resolve(outcome);
+    await deferred.process.outcome;
 
     expect(setters[8]).toHaveBeenCalledExactlyOnceWith(outcome);
     expect(setters[7]).toHaveBeenCalledExactlyOnceWith({
@@ -244,6 +301,93 @@ describe('App', () => {
     expect(setters[3]).not.toHaveBeenCalled();
   });
 
+  it('renders only the processing modal while a diff is running and terminates from its sole action', () => {
+    const deferred = createDeferredProcess();
+    const { tree, setters, processRef } = renderApp({
+      isProcessing: true,
+      activeProcess: deferred.process,
+      modalState: { isOpen: true, title: 'Old modal', message: 'Hidden', variant: 'info' },
+    });
+
+    const processingModal = findElement(tree, (element) => element.type === 'mock-processing-modal');
+    expect(findElements(tree, (element) => element.type === 'mock-modal')).toEqual([]);
+
+    (processingModal.props.onTerminate as () => void)();
+
+    expect(deferred.process.terminate).toHaveBeenCalledOnce();
+    expect(processRef.current).toBeNull();
+    expect(setters[9]).toHaveBeenCalledExactlyOnceWith(false);
+    expect(setters[2]).not.toHaveBeenCalled();
+    expect(setters[3]).not.toHaveBeenCalled();
+  });
+
+  it('ignores a terminated process if it later resolves', async () => {
+    const deferred = createDeferredProcess();
+    workerMocks.startDiffProcess.mockReturnValue(deferred.process);
+    const initialRender = renderApp({ originalText: 'before', modifiedText: 'after' });
+
+    (findElement(initialRender.tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
+
+    const processingRender = renderApp({ isProcessing: true }, initialRender.processRef);
+    (
+      findElement(processingRender.tree, (element) => element.type === 'mock-processing-modal').props
+        .onTerminate as () => void
+    )();
+    initialRender.setters.forEach((setter) => setter.mockClear());
+
+    deferred.resolve({ status: 'success', diffResult });
+    await deferred.process.outcome;
+
+    expect(initialRender.setters.every((setter) => setter.mock.calls.length === 0)).toBe(true);
+  });
+
+  it('terminates an active process on unmount and ignores its eventual outcome', async () => {
+    const deferred = createDeferredProcess();
+    workerMocks.startDiffProcess.mockReturnValue(deferred.process);
+    const rendered = renderApp({ originalText: 'before', modifiedText: 'after' });
+
+    (findElement(rendered.tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
+    rendered.getEffectCleanup()?.();
+
+    expect(deferred.process.terminate).toHaveBeenCalledOnce();
+    expect(rendered.processRef.current).toBeNull();
+    rendered.setters.forEach((setter) => setter.mockClear());
+
+    deferred.resolve({ status: 'success', diffResult });
+    await deferred.process.outcome;
+
+    expect(rendered.setters.every((setter) => setter.mock.calls.length === 0)).toBe(true);
+  });
+
+  it('returns to editing with an error modal when the worker fails', async () => {
+    const deferred = createDeferredProcess();
+    workerMocks.startDiffProcess.mockReturnValue(deferred.process);
+    const { tree, setters } = renderApp({ originalText: 'before', modifiedText: 'after' });
+
+    (findElement(tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
+    deferred.reject(new Error('worker crashed'));
+    await deferred.process.outcome.catch(() => undefined);
+
+    expect(setters[9]).toHaveBeenLastCalledWith(false);
+    expect(setters[7]).toHaveBeenCalledExactlyOnceWith({
+      isOpen: true,
+      title: 'Diff Processing Error',
+      message: 'Failed to compare the texts:\n\nworker crashed',
+      variant: 'error',
+    });
+    expect(setters[2]).not.toHaveBeenCalled();
+    expect(setters[3]).not.toHaveBeenCalled();
+  });
+
+  it('does not start another process while one is already running', () => {
+    const { tree, setters } = renderApp({ isProcessing: true });
+
+    (findElement(tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
+
+    expect(workerMocks.startDiffProcess).not.toHaveBeenCalled();
+    expect(setters.every((setter) => setter.mock.calls.length === 0)).toBe(true);
+  });
+
   it('renders the current diff and clears it when returning to edit mode', () => {
     const { tree, setters } = renderApp({ diffResult, isCompareMode: true });
     const header = findElement(tree, (element) => element.type === 'mock-header');
@@ -252,7 +396,7 @@ describe('App', () => {
     expect(findElements(tree, (element) => element.type === 'mock-text-areas')).toEqual([]);
 
     (header.props.onToggleMode as () => void)();
-    expect(diffMocks.computeDiff).not.toHaveBeenCalled();
+    expect(workerMocks.startDiffProcess).not.toHaveBeenCalled();
     expect(setters[2]).toHaveBeenCalledExactlyOnceWith(null);
     expect(setters[3]).toHaveBeenCalledExactlyOnceWith(false);
   });

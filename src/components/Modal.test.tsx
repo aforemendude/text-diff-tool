@@ -69,4 +69,40 @@ describe('Modal', () => {
     );
     expect(findElements(tree, (element) => element.type === 'button')[1].props.children).toBe('Continue');
   });
+
+  it('keeps a non-dismissible modal open until its dedicated action is used', () => {
+    const onClose = vi.fn();
+    const onAction = vi.fn();
+    const tree = Modal({
+      title: 'Comparing Text',
+      message: 'The comparison is still running.',
+      onClose,
+      onAction,
+      actionLabel: 'Terminate',
+      dismissible: false,
+    });
+
+    const modal = findElement(tree, (element) => element.props.className === 'modal');
+    const buttons = findElements(tree, (element) => element.type === 'button');
+
+    expect(tree.props.onClick).toBeUndefined();
+    expect(modal.props).toMatchObject({
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': 'Comparing Text',
+    });
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0].props).toMatchObject({
+      className: 'btn btn-primary',
+      children: 'Terminate',
+      onClick: onAction,
+      autoFocus: true,
+    });
+    expect(findElements(tree, (element) => element.props.className === 'modal__close')).toEqual([]);
+
+    (buttons[0].props.onClick as () => void)();
+
+    expect(onAction).toHaveBeenCalledOnce();
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

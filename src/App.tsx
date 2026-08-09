@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './App.css';
-import { Header, TextAreas, CompareDisplay, Modal } from './components';
+import { Header, TextAreas, CompareDisplay, Modal, ProcessingModal } from './components';
 import type { DiffCleanupMode, DiffResult } from './types/diff';
-import { computeDiff, type ComputeDiffOutcome, type JsonWarning } from './utils/diffUtils';
+import type { ComputeDiffOutcome, JsonWarning } from './utils/diffUtils';
+import { startDiffProcess, type DiffProcess } from './workers/diffWorkerClient';
 
 type ContinuableDiffOutcome = Exclude<ComputeDiffOutcome, { status: 'error' }>;
 
@@ -57,6 +58,17 @@ function App() {
   const [editCost, setEditCost] = useState(4);
   const [modalState, setModalState] = useState<ModalState>(closedModalState);
   const [pendingOutcome, setPendingOutcome] = useState<ContinuableDiffOutcome | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const diffProcessRef = useRef<DiffProcess | null>(null);
+
+  useEffect(
+    () => () => {
+      const activeProcess = diffProcessRef.current;
+      diffProcessRef.current = null;
+      activeProcess?.terminate();
+    },
+    [],
+  );
 
   const closeModal = () => {
     if (pendingOutcome) {
@@ -80,45 +92,101 @@ function App() {
     setModalState(closedModalState);
   };
 
-  const handleToggleMode = () => {
-    if (!isCompareMode) {
-      const outcome = computeDiff(originalText, modifiedText, { isJsonMode, diffCleanupMode, editCost });
-      if (outcome.status === 'error') {
-        const sourceLabel = outcome.source === 'original' ? 'Original' : 'Modified';
-        setModalState({
-          isOpen: true,
-          title: `JSON Parse Error - ${sourceLabel} Text`,
-          message: `Failed to parse the ${outcome.source} text as JSON:\n\n${outcome.message}`,
-          variant: 'error',
-        });
-        return;
-      }
-      if (outcome.warnings && outcome.warnings.length > 0) {
-        const issueCount = outcome.warnings.reduce((total, warning) => total + warning.count, 0);
-        setPendingOutcome(outcome);
-        setModalState({
-          isOpen: true,
-          title: `JSON Parse Warning - ${issueCount} ${issueCount === 1 ? 'Issue' : 'Issues'}`,
-          message: createWarningMessage(outcome.warnings),
-          variant: 'warning',
-        });
-        return;
-      }
-      if (outcome.status === 'identical') {
-        setModalState({
-          isOpen: true,
-          title: 'Identical Content',
-          message: 'The original and modified content are exactly the same. There are no differences to display.',
-          variant: 'info',
-        });
-        return;
-      }
-
-      setDiffResult(outcome.diffResult);
-    } else {
-      setDiffResult(null);
+  const handleDiffOutcome = (outcome: ComputeDiffOutcome) => {
+    if (outcome.status === 'error') {
+      const sourceLabel = outcome.source === 'original' ? 'Original' : 'Modified';
+      setModalState({
+        isOpen: true,
+        title: `JSON Parse Error - ${sourceLabel} Text`,
+        message: `Failed to parse the ${outcome.source} text as JSON:\n\n${outcome.message}`,
+        variant: 'error',
+      });
+      return;
     }
-    setIsCompareMode(!isCompareMode);
+    if (outcome.warnings && outcome.warnings.length > 0) {
+      const issueCount = outcome.warnings.reduce((total, warning) => total + warning.count, 0);
+      setPendingOutcome(outcome);
+      setModalState({
+        isOpen: true,
+        title: `JSON Parse Warning - ${issueCount} ${issueCount === 1 ? 'Issue' : 'Issues'}`,
+        message: createWarningMessage(outcome.warnings),
+        variant: 'warning',
+      });
+      return;
+    }
+    if (outcome.status === 'identical') {
+      setModalState({
+        isOpen: true,
+        title: 'Identical Content',
+        message: 'The original and modified content are exactly the same. There are no differences to display.',
+        variant: 'info',
+      });
+      return;
+    }
+
+    setDiffResult(outcome.diffResult);
+    setIsCompareMode(true);
+  };
+
+  const showProcessingError = (error: unknown) => {
+    setModalState({
+      isOpen: true,
+      title: 'Diff Processing Error',
+      message: `Failed to compare the texts:\n\n${error instanceof Error ? error.message : 'Unknown error'}`,
+      variant: 'error',
+    });
+  };
+
+  const handleToggleMode = () => {
+    if (isProcessing) {
+      return;
+    }
+
+    if (isCompareMode) {
+      setDiffResult(null);
+      setIsCompareMode(false);
+      return;
+    }
+
+    let diffProcess: DiffProcess;
+
+    try {
+      diffProcess = startDiffProcess(originalText, modifiedText, { isJsonMode, diffCleanupMode, editCost });
+    } catch (error) {
+      showProcessingError(error);
+      return;
+    }
+
+    diffProcessRef.current = diffProcess;
+    setIsProcessing(true);
+
+    void diffProcess.outcome.then(
+      (outcome) => {
+        if (diffProcessRef.current !== diffProcess) {
+          return;
+        }
+
+        diffProcessRef.current = null;
+        setIsProcessing(false);
+        handleDiffOutcome(outcome);
+      },
+      (error: unknown) => {
+        if (diffProcessRef.current !== diffProcess) {
+          return;
+        }
+
+        diffProcessRef.current = null;
+        setIsProcessing(false);
+        showProcessingError(error);
+      },
+    );
+  };
+
+  const terminateDiffProcess = () => {
+    const activeProcess = diffProcessRef.current;
+    diffProcessRef.current = null;
+    activeProcess?.terminate();
+    setIsProcessing(false);
   };
 
   return (
@@ -142,7 +210,9 @@ function App() {
         />
       )}
       {isCompareMode && <CompareDisplay diffResult={diffResult} />}
-      {modalState.isOpen && (
+      {isProcessing ? (
+        <ProcessingModal onTerminate={terminateDiffProcess} />
+      ) : modalState.isOpen ? (
         <Modal
           title={modalState.title}
           message={modalState.message}
@@ -150,7 +220,7 @@ function App() {
           variant={modalState.variant}
           actionLabel={modalState.variant === 'warning' ? 'Continue' : undefined}
         />
-      )}
+      ) : null}
     </div>
   );
 }
