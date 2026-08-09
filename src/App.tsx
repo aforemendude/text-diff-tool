@@ -3,7 +3,7 @@ import './App.css';
 import { Header, TextAreas, CompareDisplay, Modal, ProcessingModal } from './components';
 import type { DiffCleanupMode, DiffResult } from './types/diff';
 import type { ComputeDiffOutcome, JsonWarning } from './utils/diffUtils';
-import { startDiffProcess, type DiffProcess } from './workers/diffWorkerClient';
+import { initializeDiffWorker, startDiffProcess, type DiffProcess } from './workers/diffWorkerClient';
 
 type ContinuableDiffOutcome = Exclude<ComputeDiffOutcome, { status: 'error' }>;
 
@@ -61,14 +61,15 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const diffProcessRef = useRef<DiffProcess | null>(null);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    initializeDiffWorker();
+
+    return () => {
       const activeProcess = diffProcessRef.current;
       diffProcessRef.current = null;
       activeProcess?.terminate();
-    },
-    [],
-  );
+    };
+  }, []);
 
   const closeModal = () => {
     if (pendingOutcome) {

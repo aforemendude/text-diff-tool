@@ -1,29 +1,41 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Diff processing', () => {
-  test('runs a comparison in a dedicated worker', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('#original').fill('before');
-    await page.locator('#modified').fill('after');
-
+  test('loads one dedicated worker with the page and reuses it for consecutive comparisons', async ({ page }) => {
     const workerStarted = page.waitForEvent('worker');
-    await page.locator('#compare-btn').click();
-
+    await page.goto('/');
     const worker = await workerStarted;
     expect(worker.url()).toContain('diffWorker');
+
+    await page.locator('#original').fill('before');
+    await page.locator('#modified').fill('after');
+    await page.locator('#compare-btn').click();
     await expect(page.locator('.compare-display')).toBeVisible();
+
+    await page.locator('#compare-btn').click();
+    await page.locator('#modified').fill('after again');
+    await page.locator('#compare-btn').click();
+    await expect(page.locator('.compare-display')).toBeVisible();
+
+    expect(page.workers()).toEqual([worker]);
   });
 
   test('keeps the processing modal open until the user terminates the worker', async ({ page }) => {
     await page.addInitScript(() => {
-      const state = { terminateCount: 0 };
+      const state = { createCount: 0, postMessageCount: 0, terminateCount: 0 };
       Object.defineProperty(globalThis, '__diffWorkerTestState', { value: state });
 
       class PendingWorker {
         onmessage: ((event: unknown) => void) | null = null;
         onerror: ((event: unknown) => void) | null = null;
 
-        postMessage() {}
+        constructor() {
+          state.createCount += 1;
+        }
+
+        postMessage() {
+          state.postMessageCount += 1;
+        }
 
         terminate() {
           state.terminateCount += 1;
@@ -34,6 +46,18 @@ test.describe('Diff processing', () => {
     });
 
     await page.goto('/');
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (
+              globalThis as typeof globalThis & {
+                __diffWorkerTestState: { createCount: number };
+              }
+            ).__diffWorkerTestState.createCount,
+        ),
+      )
+      .toBe(1);
     await page.locator('#original').fill('before');
     await page.locator('#modified').fill('after');
     await page.locator('#compare-btn').click();
@@ -56,10 +80,13 @@ test.describe('Diff processing', () => {
       .poll(() =>
         page.evaluate(
           () =>
-            (globalThis as typeof globalThis & { __diffWorkerTestState: { terminateCount: number } })
-              .__diffWorkerTestState.terminateCount,
+            (
+              globalThis as typeof globalThis & {
+                __diffWorkerTestState: { createCount: number; postMessageCount: number; terminateCount: number };
+              }
+            ).__diffWorkerTestState,
         ),
       )
-      .toBe(1);
+      .toEqual({ createCount: 2, postMessageCount: 1, terminateCount: 1 });
   });
 });

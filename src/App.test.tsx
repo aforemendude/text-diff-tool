@@ -6,7 +6,7 @@ import type { DiffProcess } from './workers/diffWorkerClient';
 import App from './App';
 
 const reactMocks = vi.hoisted(() => ({ useEffect: vi.fn(), useRef: vi.fn(), useState: vi.fn() }));
-const workerMocks = vi.hoisted(() => ({ startDiffProcess: vi.fn() }));
+const workerMocks = vi.hoisted(() => ({ initializeDiffWorker: vi.fn(), startDiffProcess: vi.fn() }));
 
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
@@ -15,7 +15,10 @@ vi.mock('react', async (importOriginal) => ({
   useState: reactMocks.useState,
 }));
 
-vi.mock('./workers/diffWorkerClient', () => ({ startDiffProcess: workerMocks.startDiffProcess }));
+vi.mock('./workers/diffWorkerClient', () => ({
+  initializeDiffWorker: workerMocks.initializeDiffWorker,
+  startDiffProcess: workerMocks.startDiffProcess,
+}));
 
 vi.mock('./components', () => ({
   Header: 'mock-header',
@@ -117,6 +120,7 @@ describe('App', () => {
     reactMocks.useEffect.mockReset();
     reactMocks.useRef.mockReset();
     reactMocks.useState.mockReset();
+    workerMocks.initializeDiffWorker.mockReset();
     workerMocks.startDiffProcess.mockReset();
   });
 
@@ -144,6 +148,7 @@ describe('App', () => {
     expect(findElements(tree, (element) => element.type === 'mock-compare-display')).toEqual([]);
     expect(findElements(tree, (element) => element.type === 'mock-modal')).toEqual([]);
     expect(findElements(tree, (element) => element.type === 'mock-processing-modal')).toEqual([]);
+    expect(workerMocks.initializeDiffWorker).toHaveBeenCalledOnce();
   });
 
   it('runs the diff in a worker, then stores a successful result and enters compare mode', async () => {
