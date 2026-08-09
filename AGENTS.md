@@ -9,6 +9,8 @@
 
 ## Working conventions
 
+- Do not modify vendored code files, including files under `node_modules/` and the vendored Diff Match Patch library at
+  `public/diff_match_patch_uncompressed.js`.
 - Do not build or otherwise regenerate `docs/` unless the user explicitly asks. In particular, do not run
   `npm run build` or `npm run deploy` as routine validation.
 
