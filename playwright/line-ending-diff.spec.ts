@@ -45,6 +45,9 @@ test.describe('Line Ending Diff', () => {
     const modifiedSide = diffRow.locator('.compare-display__trailing-newline').last();
     await expect(modifiedSide).toHaveClass(/compare-display__trailing-newline--present/);
     await expect(modifiedSide).toContainText('New line at end of text');
+
+    // The unchanged content line should not also be styled as a modification.
+    await expect(page.locator('.diff-line--delete, .diff-line--insert')).toHaveCount(0);
   });
 
   test('does not show trailing newline indicator when both have trailing newline', async ({ page }) => {

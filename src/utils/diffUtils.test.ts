@@ -122,11 +122,11 @@ describe('computeDiff', () => {
       `{
   "a": 1,
   "b": 2
-}`,
+}\n`,
       `{
   "a": 1,
   "b": 3
-}`,
+}\n`,
     );
   });
 
@@ -207,7 +207,7 @@ describe('computeDiff', () => {
     expect(factory).toHaveBeenCalledOnce();
     expect(engine.Diff_Timeout).toBe(0);
     expect(engine.Diff_EditCost).toBe(9);
-    expect(engine.diff_linesToChars_).toHaveBeenCalledExactlyOnceWith('same\nold\norphan\n', 'same\nother');
+    expect(engine.diff_linesToChars_).toHaveBeenCalledExactlyOnceWith('same\nold\norphan\n', 'same\nother\n');
     expect(vi.mocked(engine.diff_main).mock.calls).toEqual([
       ['encoded-original', 'encoded-modified', false],
       ['old', 'other'],
@@ -215,6 +215,69 @@ describe('computeDiff', () => {
     expect(engine.diff_charsToLines_).toHaveBeenCalledExactlyOnceWith(lineDiffs, ['']);
     expect(engine.diff_cleanupSemantic).toHaveBeenCalledExactlyOnceWith(charDiffs);
     expect(engine.diff_cleanupEfficiency).not.toHaveBeenCalled();
+  });
+
+  it('keeps a former final line equal when another line is appended', () => {
+    const { engine, factory } = createEngineHarness([diff(0, 'a\n'), diff(1, 'b\n')]);
+
+    expect(computeDiff('a', 'a\nb', { ...options, diffCleanupMode: 'none' }, factory)).toEqual({
+      status: 'success',
+      diffResult: {
+        originalLines: [
+          { lineNumber: 1, type: 'equal', content: 'a' },
+          { lineNumber: -1, type: 'delete', content: '' },
+        ],
+        modifiedLines: [
+          { lineNumber: 1, type: 'equal', content: 'a' },
+          { lineNumber: 2, type: 'insert', content: 'b' },
+        ],
+        originalTrailingNewline: false,
+        modifiedTrailingNewline: false,
+      },
+    });
+
+    expect(engine.diff_linesToChars_).toHaveBeenCalledExactlyOnceWith('a\n', 'a\nb\n');
+    expect(engine.diff_main).toHaveBeenCalledExactlyOnceWith('encoded-original', 'encoded-modified', false);
+  });
+
+  it('represents a trailing-newline-only change only in the trailing-newline metadata', () => {
+    const { engine, factory } = createEngineHarness([diff(0, 'a\n')]);
+
+    expect(computeDiff('a', 'a\n', { ...options, diffCleanupMode: 'none' }, factory)).toEqual({
+      status: 'success',
+      diffResult: {
+        originalLines: [{ lineNumber: 1, type: 'equal', content: 'a' }],
+        modifiedLines: [{ lineNumber: 1, type: 'equal', content: 'a' }],
+        originalTrailingNewline: false,
+        modifiedTrailingNewline: true,
+      },
+    });
+
+    expect(engine.diff_linesToChars_).toHaveBeenCalledExactlyOnceWith('a\n', 'a\n');
+    expect(engine.diff_main).toHaveBeenCalledExactlyOnceWith('encoded-original', 'encoded-modified', false);
+  });
+
+  it('treats equal reconstructed delete and insert lines as unchanged', () => {
+    const { engine, factory } = createEngineHarness([diff(-1, 'a'), diff(1, 'a\nb')]);
+
+    expect(computeDiff('a', 'a\nb', { ...options, diffCleanupMode: 'none' }, factory)).toEqual({
+      status: 'success',
+      diffResult: {
+        originalLines: [
+          { lineNumber: 1, type: 'equal', content: 'a' },
+          { lineNumber: -1, type: 'delete', content: '' },
+        ],
+        modifiedLines: [
+          { lineNumber: 1, type: 'equal', content: 'a' },
+          { lineNumber: 2, type: 'insert', content: 'b' },
+        ],
+        originalTrailingNewline: false,
+        modifiedTrailingNewline: false,
+      },
+    });
+
+    expect(engine.diff_main).toHaveBeenCalledExactlyOnceWith('encoded-original', 'encoded-modified', false);
+    expect(engine.diff_cleanupSemantic).not.toHaveBeenCalled();
   });
 
   it('aligns an insertion with an explicit empty original line', () => {

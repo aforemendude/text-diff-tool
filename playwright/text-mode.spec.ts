@@ -57,6 +57,26 @@ test.describe('Text Mode Comparison', () => {
     await expect(addedLine).toBeVisible();
   });
 
+  test('keeps the former final line unchanged when a line is appended', async ({ page }) => {
+    await page.locator('#original').fill('a');
+    await page.locator('#modified').fill('a\nb');
+
+    await page.locator('#compare-btn').click();
+
+    const rows = page.locator('.compare-display__row');
+    await expect(rows).toHaveCount(2);
+
+    const formerFinalLine = rows.first().locator('.diff-line');
+    await expect(formerFinalLine.nth(0)).toHaveClass('diff-line');
+    await expect(formerFinalLine.nth(1)).toHaveClass('diff-line');
+    await expect(formerFinalLine.locator('.diff-line__text')).toHaveText(['a', 'a']);
+
+    const appendedLine = rows.nth(1).locator('.diff-line');
+    await expect(appendedLine.nth(0)).toHaveClass(/diff-line--empty/);
+    await expect(appendedLine.nth(1)).toHaveClass(/diff-line--insert/);
+    await expect(appendedLine.nth(1).locator('.diff-line__text')).toHaveText('b');
+  });
+
   test('keeps inherited prototype names equal on unchanged final lines', async ({ page }) => {
     expect(await page.evaluate(() => Object.isFrozen(Object.prototype))).toBe(true);
 

@@ -76,6 +76,13 @@ function addWarnings<T extends { status: 'success' | 'identical' }>(outcome: T, 
   return warnings.length === 0 ? outcome : { ...outcome, warnings };
 }
 
+function normalizeLineDiffInput(text: string): string {
+  // The line encoder includes a terminating newline in each token. Add one to a non-empty final line so the same
+  // logical line receives the same token whether or not another line follows it. The separately captured trailing
+  // newline flags retain the original line-ending difference for display.
+  return text === '' || text.endsWith('\n') ? text : `${text}\n`;
+}
+
 export function computeDiff(
   originalText: string,
   modifiedText: string,
@@ -113,10 +120,8 @@ export function computeDiff(
   dmp.Diff_Timeout = 0;
   dmp.Diff_EditCost = editCost;
 
-  const originalLines = textToCompareOriginal.split('\n');
-  const modifiedLines = textToCompareModified.split('\n');
-  const lineText1 = originalLines.join('\n');
-  const lineText2 = modifiedLines.join('\n');
+  const lineText1 = normalizeLineDiffInput(textToCompareOriginal);
+  const lineText2 = normalizeLineDiffInput(textToCompareModified);
 
   const { chars1, chars2, lineArray } = dmp.diff_linesToChars_(lineText1, lineText2);
   const lineDiffs = dmp.diff_main(chars1, chars2, false);
@@ -165,6 +170,14 @@ export function computeDiff(
       origIdx++;
       modIdx++;
     } else if (origLine?.type === 'delete' && modLine?.type === 'insert') {
+      if (origLine.content === modLine.content) {
+        processedOriginal.push({ ...origLine, type: 'equal' });
+        processedModified.push({ ...modLine, type: 'equal' });
+        origIdx++;
+        modIdx++;
+        continue;
+      }
+
       const charDiffs = dmp.diff_main(origLine.content, modLine.content);
       if (diffCleanupMode === 'semantic') {
         dmp.diff_cleanupSemantic(charDiffs);
