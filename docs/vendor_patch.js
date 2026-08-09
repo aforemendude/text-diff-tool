@@ -8,9 +8,18 @@
  * case, the same unchanged line can receive different tokens in the two inputs and be displayed as modified.
  *
  * Prefixing every non-empty line with a NUL makes its map key distinct from `Object.prototype` names. The prefix is
- * removed from `lineArray` so callers get the original text back. This stays separate from
- * `diff_match_patch_uncompressed.js` because that file is vendored. It must load after the vendored script and before
- * application code, as arranged in `index.html`. See the inherited-name regression in `playwright/text-mode.spec.ts`.
+ * removed from `lineArray` so callers get the original text back.
+ *
+ * The app no longer relies on this workaround for its whole-line diff. `src/utils/lineDiffUtils.ts` now represents
+ * lines with numeric array entries and stores them in a `Map`, where inherited property names are safe. The vendored
+ * engine is still used to diff the characters within one changed line. It may invoke its private line encoder as an
+ * optimization for long input, but a single line long enough to enter that path cannot equal any of the short inherited
+ * names that caused this issue. The active regression coverage is in `src/utils/lineDiffUtils.test.ts` and
+ * `playwright/text-mode.spec.ts`.
+ *
+ * Keep this shim as a compatibility safeguard in case multiline input is passed to the vendored engine again. It
+ * remains separate from `diff_match_patch_uncompressed.js` because that file is vendored. The `diffRuntimePlugin` in
+ * `vite.config.ts` appends this file after the vendored script when constructing the worker's virtual runtime module.
  */
 (function () {
   var originalDiffLinesToChars = diff_match_patch.prototype.diff_linesToChars_;
