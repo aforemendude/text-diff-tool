@@ -1,5 +1,5 @@
 {
-  "plugins": ["@aforemendude/prettier-plugin-wrap-comments"],
+  "plugins": ["@aforemendude/prettier-plugin-wrap-comments", "prettier-plugin-jsdoc"],
   "printWidth": 120,
   "proseWrap": "always",
   "singleQuote": true

@@ -1,6 +1,5 @@
 /**
- * Traverses an object and collects all keys (including nested ones) into a
- * sorted array.
+ * Traverses an object and collects all keys (including nested ones) into a sorted array.
  *
  * For arrays, it adds the index as a string.
  */
@@ -33,11 +32,10 @@ function collectSortedKeys(value: unknown): string[] {
 }
 
 /**
- * Deep copies an object into a structure where all objects are created with
- * Object.create(null) and all arrays are converted to objects with index keys.
+ * Deep copies an object into a structure where all objects are created with Object.create(null) and all arrays are
+ * converted to objects with index keys.
  *
- * This is needed to ensure safe handling of JSON objects that have "__proto__"
- * as a key.
+ * This is needed to ensure safe handling of JSON objects that have `__proto__` as a key.
  */
 function safeDeepCopy(obj: unknown): unknown {
   if (obj === null || typeof obj !== 'object') {
@@ -61,9 +59,7 @@ function safeDeepCopy(obj: unknown): unknown {
   return result;
 }
 
-/**
- * Stringifies a value with sorted keys for consistent JSON comparison.
- */
+/** Stringifies a value with sorted keys for consistent JSON comparison. */
 export function stringifyWithSortedKeys(value: unknown): string {
   const sortedKeys = collectSortedKeys(value);
   return JSON.stringify(safeDeepCopy(value), sortedKeys, 2);
@@ -84,8 +80,8 @@ const JSON_NUMBER_PATTERN = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
 const JSON_NUMBER_PARTS_PATTERN = /^(-?)(0|[1-9]\d*)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/;
 
 /**
- * Converts a JSON number token into a normalized base-10 representation so
- * numerically equivalent spellings such as 1e2 and 100 can be compared.
+ * Converts a JSON number token into a normalized base-10 representation so numerically equivalent spellings such as 1e2
+ * and 100 can be compared.
  */
 function canonicalizeDecimal(token: string): CanonicalDecimal | null {
   const match = JSON_NUMBER_PARTS_PATTERN.exec(token);
@@ -142,10 +138,8 @@ function hasNumericPrecisionIssue(token: string): boolean {
 }
 
 /**
- * Scans already-valid JSON while retaining source tokens that JSON.parse
- * discards. A small recursive scanner is used because duplicate object keys
- * and the original spelling of numbers cannot be recovered from the parsed
- * value.
+ * Scans already-valid JSON while retaining source tokens that JSON.parse discards. A small recursive scanner is used
+ * because duplicate object keys and the original spelling of numbers cannot be recovered from the parsed value.
  */
 class JsonIssueScanner {
   private position = 0;
@@ -277,9 +271,8 @@ class JsonIssueScanner {
 }
 
 /**
- * Counts lossy number conversions and repeated keys in valid JSON text.
- * Every occurrence of a key after the first within the same object is counted
- * as a duplicate.
+ * Counts lossy number conversions and repeated keys in valid JSON text. Every occurrence of a key after the first
+ * within the same object is counted as a duplicate.
  */
 export function detectJsonIssues(text: string): JsonIssueCounts {
   return new JsonIssueScanner(text).scan();
