@@ -1,15 +1,17 @@
 import { defineConfig, devices } from '@playwright/test';
+import { cpus } from 'node:os';
 
 const previewBaseURL = 'http://localhost:4173';
 const configuredBaseURL = process.env.BASE_URL;
 const baseURL = configuredBaseURL || previewBaseURL;
+const cpuCoreCount = cpus().length;
 
 export default defineConfig({
   testDir: './playwright',
   fullyParallel: true,
   forbidOnly: true,
   retries: 0,
-  workers: 10,
+  workers: cpuCoreCount,
   reporter: 'html',
   use: {
     baseURL,
@@ -27,6 +29,8 @@ export default defineConfig({
     },
     {
       name: 'webkit',
+      // WebKit's processes can become unresponsive when using every available CPU core in constrained environments.
+      workers: Math.max(1, Math.floor(cpuCoreCount / 2)),
       use: {
         ...devices['Desktop Safari'],
         launchOptions: {
