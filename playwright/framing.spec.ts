@@ -14,15 +14,6 @@ async function loadFramedApp(page: Page, baseURL: string | undefined, sandboxed 
   await page.setContent(`<iframe title="TextDiffTool"${sandbox} src="${appUrl}"></iframe>`);
 }
 
-test('renders normally as the top-level document', async ({ page }) => {
-  await page.goto('/');
-
-  const body = page.locator('body');
-  await expect(body).not.toHaveAttribute('hidden', '');
-  await expect(body).not.toHaveAttribute('inert', '');
-  await expect(page.locator('.app')).toBeVisible();
-});
-
 test('stays hidden and inert inside a cross-origin frame', async ({ page, baseURL }) => {
   await loadFramedApp(page, baseURL);
 

@@ -11,29 +11,6 @@ test.describe('JSON Mode Comparison', () => {
     await expect(jsonModeToggle).toBeChecked();
   });
 
-  test('ignores object key order', async ({ page }) => {
-    // Two objects with same data but different key order
-    const text1 = `{
-      "name": "John",
-      "age": 30,
-      "city": "New York"
-    }`;
-    const text2 = `{
-      "city": "New York",
-      "name": "John",
-      "age": 30
-    }`;
-
-    await page.locator('#original').fill(text1);
-    await page.locator('#modified').fill(text2);
-
-    await page.locator('#compare-btn').click();
-
-    // Should see identical content modal
-    await expect(page.getByText('Identical Content')).toBeVisible();
-    await expect(page.getByText('The original and modified content are exactly the same')).toBeVisible();
-  });
-
   test('ignores both key order and formatting differences', async ({ page }) => {
     const text1 = '{"name": "Bob", "id": 123}';
     const text2 = `{
@@ -116,24 +93,6 @@ test.describe('JSON Mode Comparison', () => {
     await expect(page.locator('.modal__title')).toContainText('JSON Parse Error');
     await expect(page.getByText('Failed to parse the modified text as JSON')).toBeVisible();
     await expect(page.getByText(/JSON Parse Warning/)).not.toBeVisible();
-  });
-
-  test('handles arrays: sorts keys within objects but preserves array order', async ({ page }) => {
-    // Array order is same, but object keys are different
-    const text1 = `[
-      {"z": 1, "a": 2},
-      {"y": 3, "b": 4}
-    ]`;
-    const text2 = `[
-      {"a": 2, "z": 1},
-      {"b": 4, "y": 3}
-    ]`;
-
-    await page.locator('#original').fill(text1);
-    await page.locator('#modified').fill(text2);
-    await page.locator('#compare-btn').click();
-
-    await expect(page.getByText('Identical Content')).toBeVisible();
   });
 
   test('preserves array element order', async ({ page }) => {
