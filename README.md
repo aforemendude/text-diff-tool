@@ -86,10 +86,10 @@ npm run preview
 
 ### Tests
 
-Run the Playwright end-to-end tests (the production preview server starts automatically):
+Run the Playwright end-to-end tests (the production build runs first, then the preview server starts automatically):
 
 ```bash
-npm run playwright:local
+npm run integration
 ```
 
 Run the Vitest unit tests:
@@ -102,6 +102,15 @@ npm run test
 
 ```bash
 npm run format
+```
+
+### Deploy
+
+Install dependencies, verify the lockfile, run all checks, and rebuild the tracked `docs/` deployment without committing
+or pushing it:
+
+```bash
+npm run deploy
 ```
 
 ## Usage
