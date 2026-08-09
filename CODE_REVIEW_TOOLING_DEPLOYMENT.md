@@ -13,21 +13,6 @@ repository searches, and the checks listed below.
 
 ## Findings
 
-### 3. The CSP does not provide its declared framing protection
-
-- **Severity:** Low
-- **Reference:** `index.html:6-9`
-- **Problem:** `frame-ancestors 'none'` is delivered in a `<meta http-equiv="Content-Security-Policy">` element, but
-  browsers do not apply `frame-ancestors` from a meta-delivered policy. A focused Chromium check emitted the
-  corresponding warning and successfully loaded the live GitHub Pages application inside a cross-origin iframe. The live
-  response also supplies no CSP HTTP header that could enforce the directive separately.
-- **Impact:** The application has no effective anti-framing policy, despite the source appearing to provide one. This
-  leaves it open to UI-redressing/clickjacking if sensitive or state-changing interactions are added, and can mislead
-  maintainers assessing the deployment's security controls.
-- **Recommendation:** Deliver `Content-Security-Policy: frame-ancestors 'none'` as an HTTP response header (and consider
-  `X-Frame-Options: DENY` as a legacy fallback). If the current static host cannot set response headers, move the site
-  to a host or edge layer that can; do not rely on the meta directive for this control.
-
 ### 4. The production CSP disables Vite hot-module reload during development
 
 - **Severity:** Low
