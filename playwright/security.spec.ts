@@ -14,6 +14,34 @@ async function loadFramedApp(page: Page, baseURL: string | undefined, sandboxed 
   await page.setContent(`<iframe title="TextDiffTool"${sandbox} src="${appUrl}"></iframe>`);
 }
 
+test('uses an environment-specific CSP in development and preview', async ({ page }) => {
+  const consoleMessages: string[] = [];
+  page.on('console', (message) => consoleMessages.push(message.text()));
+
+  await page.goto('/');
+
+  const contentSecurityPolicy = await page
+    .locator('meta[http-equiv="Content-Security-Policy"]')
+    .getAttribute('content');
+  expect(contentSecurityPolicy).not.toBeNull();
+
+  const connectSources = contentSecurityPolicy
+    ?.split(';')
+    .map((directive) => directive.trim().split(/\s+/))
+    .find(([directive]) => directive === 'connect-src')
+    ?.slice(1);
+  const isDevelopmentServer = (await page.locator('script[src$="/@vite/client"]').count()) > 0;
+
+  if (isDevelopmentServer) {
+    const webSocketEndpoint = new URL(page.url());
+    webSocketEndpoint.protocol = webSocketEndpoint.protocol === 'https:' ? 'wss:' : 'ws:';
+    expect(connectSources).toContain(webSocketEndpoint.href);
+    await expect.poll(() => consoleMessages).toContain('[vite] connected.');
+  } else {
+    expect(connectSources).toBeUndefined();
+  }
+});
+
 test('stays hidden and inert inside a cross-origin frame', async ({ page, baseURL }) => {
   await loadFramedApp(page, baseURL);
 
