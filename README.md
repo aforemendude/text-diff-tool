@@ -113,8 +113,3 @@ npm run format
 ## License and Credits
 
 See source code for license and library information.
-
-### AI Use Disclosure
-
-This project was built with the assistance of AI coding tools. AI was used to help with code generation, documentation,
-and development workflow optimization.
