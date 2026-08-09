@@ -7,7 +7,7 @@ test('About modal can be opened and closed', async ({ page }) => {
   await page.getByRole('button', { name: 'About' }).click();
 
   // Check if modal is visible
-  const modal = page.locator('.modal-overlay');
+  const modal = page.locator('.modal__overlay');
   await expect(modal).toBeVisible();
 
   // Check for the title

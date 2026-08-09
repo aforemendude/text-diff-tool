@@ -12,17 +12,17 @@ test.describe('Line Ending Diff', () => {
 
     await page.locator('#compare-btn').click();
 
-    const diffRow = page.locator('.diff-row--trailing-newline');
+    const diffRow = page.locator('.compare-display__row--trailing-newline');
     await expect(diffRow).toBeVisible();
 
     // Original side should show "present"
-    const originalSide = diffRow.locator('.diff-trailing-newline').first();
-    await expect(originalSide).toHaveClass(/diff-trailing-newline--present/);
+    const originalSide = diffRow.locator('.compare-display__trailing-newline').first();
+    await expect(originalSide).toHaveClass(/compare-display__trailing-newline--present/);
     await expect(originalSide).toContainText('New line at end of text');
 
     // Modified side should show "absent"
-    const modifiedSide = diffRow.locator('.diff-trailing-newline').last();
-    await expect(modifiedSide).toHaveClass(/diff-trailing-newline--absent/);
+    const modifiedSide = diffRow.locator('.compare-display__trailing-newline').last();
+    await expect(modifiedSide).toHaveClass(/compare-display__trailing-newline--absent/);
     await expect(modifiedSide).toContainText('No new line at end of text');
   });
 
@@ -33,17 +33,17 @@ test.describe('Line Ending Diff', () => {
 
     await page.locator('#compare-btn').click();
 
-    const diffRow = page.locator('.diff-row--trailing-newline');
+    const diffRow = page.locator('.compare-display__row--trailing-newline');
     await expect(diffRow).toBeVisible();
 
     // Original side should show "absent"
-    const originalSide = diffRow.locator('.diff-trailing-newline').first();
-    await expect(originalSide).toHaveClass(/diff-trailing-newline--absent/);
+    const originalSide = diffRow.locator('.compare-display__trailing-newline').first();
+    await expect(originalSide).toHaveClass(/compare-display__trailing-newline--absent/);
     await expect(originalSide).toContainText('No new line at end of text');
 
     // Modified side should show "present"
-    const modifiedSide = diffRow.locator('.diff-trailing-newline').last();
-    await expect(modifiedSide).toHaveClass(/diff-trailing-newline--present/);
+    const modifiedSide = diffRow.locator('.compare-display__trailing-newline').last();
+    await expect(modifiedSide).toHaveClass(/compare-display__trailing-newline--present/);
     await expect(modifiedSide).toContainText('New line at end of text');
   });
 
@@ -55,7 +55,7 @@ test.describe('Line Ending Diff', () => {
 
     await page.locator('#compare-btn').click();
 
-    const diffRow = page.locator('.diff-row--trailing-newline');
+    const diffRow = page.locator('.compare-display__row--trailing-newline');
     await expect(diffRow).not.toBeVisible();
   });
 
@@ -66,7 +66,7 @@ test.describe('Line Ending Diff', () => {
 
     await page.locator('#compare-btn').click();
 
-    const diffRow = page.locator('.diff-row--trailing-newline');
+    const diffRow = page.locator('.compare-display__row--trailing-newline');
     await expect(diffRow).not.toBeVisible();
   });
 });

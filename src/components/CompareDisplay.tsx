@@ -1,5 +1,6 @@
 import { useState, ReactElement } from 'react';
-import { DiffResult, LineDiff, CharDiff } from '../App';
+import './CompareDisplay.css';
+import type { CharDiff as CharDiffValue, DiffResult, LineDiff } from '../types/diff';
 
 interface CompareDisplayProps {
   diffResult: DiffResult | null;
@@ -115,9 +116,9 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
 
           if (section.type === 'collapsed' && !expandedSections.has(sectionKey)) {
             return (
-              <div key={sectionKey} className="diff-collapsed" onClick={() => toggleSection(sectionKey)}>
-                <span className="diff-collapsed__icon">⊕</span>
-                <span className="diff-collapsed__text">
+              <div key={sectionKey} className="compare-display__collapsed" onClick={() => toggleSection(sectionKey)}>
+                <span className="compare-display__collapsed-icon">⊕</span>
+                <span className="compare-display__collapsed-text">
                   {section.lineCount} unchanged {section.lineCount === 1 ? 'line' : 'lines'} hidden
                 </span>
               </div>
@@ -128,7 +129,7 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
           const lines: ReactElement[] = [];
           for (let idx = section.startIndex; idx <= section.endIndex; idx++) {
             lines.push(
-              <div key={idx} className="diff-row">
+              <div key={idx} className="compare-display__row">
                 <DiffLine line={originalLines[idx]} side="original" />
                 <DiffLine line={modifiedLines[idx]} side="modified" />
               </div>,
@@ -138,10 +139,13 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
           // If this was a collapsed section that's now expanded, wrap with collapse button
           if (section.type === 'collapsed') {
             return (
-              <div key={sectionKey} className="diff-expanded-section">
-                <div className="diff-collapsed diff-collapsed--expanded" onClick={() => toggleSection(sectionKey)}>
-                  <span className="diff-collapsed__icon">⊖</span>
-                  <span className="diff-collapsed__text">
+              <div key={sectionKey} className="compare-display__expanded-section">
+                <div
+                  className="compare-display__collapsed compare-display__collapsed--expanded"
+                  onClick={() => toggleSection(sectionKey)}
+                >
+                  <span className="compare-display__collapsed-icon">⊖</span>
+                  <span className="compare-display__collapsed-text">
                     Collapse {section.lineCount} unchanged {section.lineCount === 1 ? 'line' : 'lines'}
                   </span>
                 </div>
@@ -153,24 +157,28 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
           return <div key={sectionKey}>{lines}</div>;
         })}
         {trailingNewlineDiffers && (
-          <div className="diff-row diff-row--trailing-newline">
+          <div className="compare-display__row compare-display__row--trailing-newline">
             <div
-              className={`diff-line diff-trailing-newline ${
-                originalTrailingNewline ? 'diff-trailing-newline--present' : 'diff-trailing-newline--absent'
+              className={`compare-display__trailing-newline ${
+                originalTrailingNewline
+                  ? 'compare-display__trailing-newline--present'
+                  : 'compare-display__trailing-newline--absent'
               }`}
             >
-              <span className="diff-line__number"></span>
-              <span className="diff-trailing-newline__text">
+              <span className="compare-display__trailing-newline-number"></span>
+              <span className="compare-display__trailing-newline-text">
                 {originalTrailingNewline ? <>New line at end of text</> : <>No new line at end of text</>}
               </span>
             </div>
             <div
-              className={`diff-line diff-trailing-newline ${
-                modifiedTrailingNewline ? 'diff-trailing-newline--present' : 'diff-trailing-newline--absent'
+              className={`compare-display__trailing-newline ${
+                modifiedTrailingNewline
+                  ? 'compare-display__trailing-newline--present'
+                  : 'compare-display__trailing-newline--absent'
               }`}
             >
-              <span className="diff-line__number"></span>
-              <span className="diff-trailing-newline__text">
+              <span className="compare-display__trailing-newline-number"></span>
+              <span className="compare-display__trailing-newline-text">
                 {modifiedTrailingNewline ? <>New line at end of text</> : <>No new line at end of text</>}
               </span>
             </div>
@@ -217,7 +225,7 @@ function DiffLine({ line, side }: DiffLineProps) {
       return (
         <span className="diff-line__text">
           {line.charDiffs.map((charDiff, index) => (
-            <CharDiffSpan key={index} charDiff={charDiff} side={side} />
+            <CharDiff key={index} charDiff={charDiff} side={side} />
           ))}
         </span>
       );
@@ -235,12 +243,12 @@ function DiffLine({ line, side }: DiffLineProps) {
   );
 }
 
-interface CharDiffSpanProps {
-  charDiff: CharDiff;
+interface CharDiffProps {
+  charDiff: CharDiffValue;
   side: 'original' | 'modified';
 }
 
-function CharDiffSpan({ charDiff, side }: CharDiffSpanProps) {
+function CharDiff({ charDiff, side }: CharDiffProps) {
   const getClass = () => {
     if (charDiff.type === 'delete' && side === 'original') {
       return 'char-diff char-diff--delete';

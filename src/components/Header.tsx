@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import './Header.css';
 import AboutModal from './AboutModal';
-import SettingsModal, { type DiffCleanupMode } from './SettingsModal';
+import SettingsModal from './SettingsModal';
+import type { DiffCleanupMode } from '../types/diff';
 
 interface HeaderProps {
   isCompareMode: boolean;
@@ -29,31 +31,31 @@ function Header({
   return (
     <>
       <header className="header">
-        <div className="brand">
-          <div className="logo-container">
-            <img className="logo-icon" src="/text-diff-tool/logo.svg" alt="TextDiffTool Logo" />
+        <div className="header__brand">
+          <div className="header__logo">
+            <img className="header__logo-image" src="/text-diff-tool/logo.svg" alt="TextDiffTool Logo" />
           </div>
-          <h1>
-            <span className="brand-text">Text</span>
-            <span className="brand-diff">Diff</span>
-            <span className="brand-tool">Tool</span>
+          <h1 className="header__title">
+            <span className="header__brand-text">Text</span>
+            <span className="header__brand-diff">Diff</span>
+            <span className="header__brand-tool">Tool</span>
           </h1>
         </div>
-        <div className="header-center">
+        <div className="header__controls">
           <button id="compare-btn" className="btn btn-primary" onClick={onToggleMode}>
             {isCompareMode ? 'Edit' : 'Compare'}
           </button>
-          <label className="toggle">
+          <label className="header__toggle">
             <input
               type="checkbox"
               checked={isJsonMode}
               onChange={(e) => onJsonModeChange(e.target.checked)}
               disabled={isCompareMode}
             />
-            <span className="toggle__track">
-              <span className="toggle__thumb"></span>
+            <span className="header__toggle-track">
+              <span className="header__toggle-thumb"></span>
             </span>
-            <span className="toggle__label">JSON Mode</span>
+            <span className="header__toggle-label">JSON Mode</span>
           </label>
           <button
             id="settings-btn"
@@ -66,8 +68,8 @@ function Header({
             Settings
           </button>
         </div>
-        <div className="header-right">
-          <button className="about-btn" onClick={() => setShowAbout(true)} aria-label="About">
+        <div className="header__actions">
+          <button className="header__about-button" onClick={() => setShowAbout(true)} aria-label="About">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"

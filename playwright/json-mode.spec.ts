@@ -4,10 +4,10 @@ test.describe('JSON Mode Comparison', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // Toggle is a label containing the checkbox. Click the label to toggle.
-    await page.locator('.toggle').click();
+    await page.locator('.header__toggle').click();
 
     // Verify it is checked
-    const jsonModeToggle = page.locator('.toggle input[type="checkbox"]');
+    const jsonModeToggle = page.locator('.header__toggle input[type="checkbox"]');
     await expect(jsonModeToggle).toBeChecked();
   });
 

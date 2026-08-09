@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './common.css';
 import App from './App';
 
 // Extra protection against prototype pollution attacks Should not be needed, but added just in case

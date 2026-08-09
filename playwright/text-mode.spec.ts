@@ -4,7 +4,7 @@ test.describe('Text Mode Comparison', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // ensure we start in text mode (JSON mode off) - checking initial state
-    const jsonModeToggle = page.locator('.toggle input[type="checkbox"]');
+    const jsonModeToggle = page.locator('.header__toggle input[type="checkbox"]');
     await expect(jsonModeToggle).not.toBeChecked();
   });
 
@@ -124,7 +124,7 @@ test.describe('Text Mode Comparison', () => {
       await page.locator('#compare-btn').click();
 
       // Expect collapse at start
-      const collapseHeader = page.locator('.diff-collapsed').first();
+      const collapseHeader = page.locator('.compare-display__collapsed').first();
       await expect(collapseHeader).toBeVisible();
       await expect(collapseHeader).toContainText('7 unchanged lines hidden');
 
@@ -132,7 +132,7 @@ test.describe('Text Mode Comparison', () => {
       await collapseHeader.click();
       await expect(page.getByText('Line 1').first()).toBeVisible();
       // Should show expansion header "Collapse 7 unchanged lines"
-      await expect(page.locator('.diff-collapsed--expanded')).toContainText('Collapse 7 unchanged lines');
+      await expect(page.locator('.compare-display__collapsed--expanded')).toContainText('Collapse 7 unchanged lines');
     });
 
     test('collapses lines at the end', async ({ page }) => {
@@ -146,7 +146,7 @@ test.describe('Text Mode Comparison', () => {
       await page.locator('#modified').fill(modified);
       await page.locator('#compare-btn').click();
 
-      const collapseFooter = page.locator('.diff-collapsed').last();
+      const collapseFooter = page.locator('.compare-display__collapsed').last();
       await expect(collapseFooter).toBeVisible();
       await expect(collapseFooter).toContainText('7 unchanged lines hidden');
     });
@@ -165,7 +165,7 @@ test.describe('Text Mode Comparison', () => {
       await page.locator('#modified').fill(prefixMod + middle + suffixMod);
       await page.locator('#compare-btn').click();
 
-      const collapseMiddle = page.locator('.diff-collapsed');
+      const collapseMiddle = page.locator('.compare-display__collapsed');
       await expect(collapseMiddle).toBeVisible();
       await expect(collapseMiddle).toContainText('8 unchanged lines hidden');
 
@@ -206,9 +206,9 @@ test.describe('Text Mode Comparison', () => {
       await page.locator('#compare-btn').click();
 
       // Should find 2 collapse sections
-      await expect(page.locator('.diff-collapsed')).toHaveCount(2);
-      await expect(page.locator('.diff-collapsed').nth(0)).toContainText('8 unchanged lines hidden');
-      await expect(page.locator('.diff-collapsed').nth(1)).toContainText('8 unchanged lines hidden');
+      await expect(page.locator('.compare-display__collapsed')).toHaveCount(2);
+      await expect(page.locator('.compare-display__collapsed').nth(0)).toContainText('8 unchanged lines hidden');
+      await expect(page.locator('.compare-display__collapsed').nth(1)).toContainText('8 unchanged lines hidden');
     });
 
     test('toggles collapse state (expand and re-collapse)', async ({ page }) => {
@@ -227,7 +227,7 @@ test.describe('Text Mode Comparison', () => {
       await page.locator('#compare-btn').click();
 
       // Use .first() to be precise, though there's only one here
-      const collapseSection = page.locator('.diff-collapsed').first();
+      const collapseSection = page.locator('.compare-display__collapsed').first();
 
       // 1. Verify Initial State: Collapsed
       await expect(collapseSection).toBeVisible();
@@ -244,7 +244,7 @@ test.describe('Text Mode Comparison', () => {
       await expect(hiddenLine).toBeVisible();
 
       // Expanded header should be visible
-      const expandedHeader = page.locator('.diff-collapsed--expanded').first();
+      const expandedHeader = page.locator('.compare-display__collapsed--expanded').first();
       await expect(expandedHeader).toBeVisible();
       await expect(expandedHeader).toContainText('Collapse 12 unchanged lines');
 

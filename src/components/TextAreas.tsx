@@ -1,3 +1,5 @@
+import './TextAreas.css';
+
 interface TextAreasProps {
   originalText: string;
   modifiedText: string;
@@ -7,13 +9,14 @@ interface TextAreasProps {
 
 function TextAreas({ originalText, modifiedText, onOriginalChange, onModifiedChange }: TextAreasProps) {
   return (
-    <main className="workspace">
-      <div className="editor-pane">
-        <div className="pane-header">
+    <main className="text-areas">
+      <div className="text-areas__pane">
+        <div className="text-areas__pane-header">
           <h2>Original</h2>
         </div>
-        <div className="textarea-wrapper">
+        <div className="text-areas__textarea-wrapper">
           <textarea
+            className="text-areas__textarea"
             id="original"
             placeholder="Paste the original version of the text here..."
             value={originalText}
@@ -22,12 +25,13 @@ function TextAreas({ originalText, modifiedText, onOriginalChange, onModifiedCha
         </div>
       </div>
 
-      <div className="editor-pane">
-        <div className="pane-header">
+      <div className="text-areas__pane">
+        <div className="text-areas__pane-header">
           <h2>Modified</h2>
         </div>
-        <div className="textarea-wrapper">
+        <div className="text-areas__textarea-wrapper">
           <textarea
+            className="text-areas__textarea"
             id="modified"
             placeholder="Paste the modified version of the text here..."
             value={modifiedText}

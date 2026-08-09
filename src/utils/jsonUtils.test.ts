@@ -58,9 +58,13 @@ describe('stringifyWithSortedKeys', () => {
       const result1 = stringifyWithSortedKeys(obj1);
       const result2 = stringifyWithSortedKeys(obj2);
       const result3 = stringifyWithSortedKeys(obj3);
+      const expected = `{
+  "a": 1,
+  "b": 2,
+  "c": 3
+}`;
 
-      expect(result1).toBe(result2);
-      expect(result2).toBe(result3);
+      expect([result1, result2, result3]).toEqual([expected, expected, expected]);
     });
   });
 
@@ -96,10 +100,17 @@ describe('stringifyWithSortedKeys', () => {
         },
       };
       const result = stringifyWithSortedKeys(input);
-      expect(result).toContain('"a": "value"');
-      expect(result).toContain('"z": "deep"');
-      // Check that 'a' comes before 'z' in the output
-      expect(result.indexOf('"a"')).toBeLessThan(result.indexOf('"z"'));
+      const expected = `{
+  "level1": {
+    "level2": {
+      "level3": {
+        "a": "value",
+        "z": "deep"
+      }
+    }
+  }
+}`;
+      expect(result).toBe(expected);
     });
   });
 
@@ -176,8 +187,14 @@ describe('stringifyWithSortedKeys', () => {
         count: 2,
       };
       const result = stringifyWithSortedKeys(input);
-      // 'count' should come before 'names' alphabetically
-      expect(result.indexOf('"count"')).toBeLessThan(result.indexOf('"names"'));
+      const expected = `{
+  "count": 2,
+  "names": [
+    "alice",
+    "bob"
+  ]
+}`;
+      expect(result).toBe(expected);
     });
 
     it('handles complex nested structures', () => {
@@ -192,15 +209,23 @@ describe('stringifyWithSortedKeys', () => {
         },
       };
       const result = stringifyWithSortedKeys(input);
-
-      // 'metadata' should come before 'users'
-      expect(result.indexOf('"metadata"')).toBeLessThan(result.indexOf('"users"'));
-
-      // Within metadata, 'created' should come before 'version'
-      expect(result.indexOf('"created"')).toBeLessThan(result.indexOf('"version"'));
-
-      // Within user objects, 'age' should come before 'name'
-      expect(result.indexOf('"age"')).toBeLessThan(result.indexOf('"name"'));
+      const expected = `{
+  "metadata": {
+    "created": "2024-01-01",
+    "version": 1
+  },
+  "users": [
+    {
+      "age": 30,
+      "name": "Alice"
+    },
+    {
+      "age": 25,
+      "name": "Bob"
+    }
+  ]
+}`;
+      expect(result).toBe(expected);
     });
   });
 
@@ -208,31 +233,42 @@ describe('stringifyWithSortedKeys', () => {
     it('handles objects with numeric string keys', () => {
       const input = { '2': 'two', '1': 'one', '10': 'ten' };
       const result = stringifyWithSortedKeys(input);
-      // Numeric strings are sorted as strings, so '1' < '10' < '2'
-      const pos1 = result.indexOf('"1"');
-      const pos10 = result.indexOf('"10"');
-      const pos2 = result.indexOf('"2"');
-      expect(pos1).toBeLessThan(pos10);
-      expect(pos10).toBeLessThan(pos2);
+      const expected = `{
+  "1": "one",
+  "10": "ten",
+  "2": "two"
+}`;
+      expect(result).toBe(expected);
     });
 
     it('handles objects with special characters in keys', () => {
       const input = { 'key-with-dash': 1, 'key.with.dots': 2 };
       const result = stringifyWithSortedKeys(input);
-      expect(result).toContain('"key-with-dash"');
-      expect(result).toContain('"key.with.dots"');
+      const expected = `{
+  "key-with-dash": 1,
+  "key.with.dots": 2
+}`;
+      expect(result).toBe(expected);
     });
 
     it('handles null values in objects', () => {
       const input = { a: null, b: 'value' };
       const result = stringifyWithSortedKeys(input);
-      expect(result).toContain('"a": null');
+      const expected = `{
+  "a": null,
+  "b": "value"
+}`;
+      expect(result).toBe(expected);
     });
 
     it('handles empty string keys', () => {
       const input = { '': 'empty key', normal: 'value' };
       const result = stringifyWithSortedKeys(input);
-      expect(result).toContain('"": "empty key"');
+      const expected = `{
+  "": "empty key",
+  "normal": "value"
+}`;
+      expect(result).toBe(expected);
     });
   });
 
@@ -242,29 +278,63 @@ describe('stringifyWithSortedKeys', () => {
       // produce the same output
       const json1 = JSON.parse('{"name":"test","value":123}');
       const json2 = JSON.parse('{"value":123,"name":"test"}');
+      const expected = `{
+  "name": "test",
+  "value": 123
+}`;
 
-      expect(stringifyWithSortedKeys(json1)).toBe(stringifyWithSortedKeys(json2));
+      expect([stringifyWithSortedKeys(json1), stringifyWithSortedKeys(json2)]).toEqual([expected, expected]);
     });
 
     it('produces different output for semantically different objects', () => {
       const obj1 = { a: 1, b: 2 };
       const obj2 = { a: 1, b: 3 };
 
-      expect(stringifyWithSortedKeys(obj1)).not.toBe(stringifyWithSortedKeys(obj2));
+      expect([stringifyWithSortedKeys(obj1), stringifyWithSortedKeys(obj2)]).toEqual([
+        `{
+  "a": 1,
+  "b": 2
+}`,
+        `{
+  "a": 1,
+  "b": 3
+}`,
+      ]);
     });
   });
 
   it('handles __proto__ key safely', () => {
     // This tests the safeDeepCopy function's main purpose
     const input = JSON.parse(`{
-        "__proto__": "value1",
+        "__proto__": { "polluted": true },
         "obj": {}
       }`);
     const result = stringifyWithSortedKeys(input);
     const expected = `{
-  "__proto__": "value1",
+  "__proto__": {
+    "polluted": true
+  },
   "obj": {}
 }`;
     expect(result).toBe(expected);
+    expect(Object.prototype).not.toHaveProperty('polluted');
+  });
+
+  it('excludes inherited enumerable properties at every traversal stage', () => {
+    const input = Object.assign(Object.create({ inherited: 'excluded' }), { own: 'included' });
+
+    expect(stringifyWithSortedKeys(input)).toBe(`{
+  "own": "included"
+}`);
+  });
+
+  it('normalizes sparse and undefined array entries like JSON.stringify', () => {
+    const input = [1, , undefined];
+
+    expect(stringifyWithSortedKeys(input)).toBe(`[
+  1,
+  null,
+  null
+]`);
   });
 });
