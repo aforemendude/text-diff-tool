@@ -5,6 +5,25 @@ import { APPLICATION_BASE_URL } from './src/config.ts';
 
 const productionContentSecurityPolicy =
   "default-src 'none'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; base-uri 'none'; form-action 'none';";
+const loopbackHostnames = ['localhost', '127.0.0.1', '[::1]'];
+
+function developmentWebSocketSources(serverUrls: string[]): string[] {
+  const sources = new Set<string>();
+
+  for (const serverUrl of serverUrls) {
+    const webSocketUrl = new URL(serverUrl);
+    webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+
+    const hostnames = loopbackHostnames.includes(webSocketUrl.hostname) ? loopbackHostnames : [webSocketUrl.hostname];
+    for (const hostname of hostnames) {
+      const source = new URL(webSocketUrl);
+      source.hostname = hostname;
+      sources.add(source.href);
+    }
+  }
+
+  return [...sources];
+}
 
 function developmentContentSecurityPolicyPlugin(): Plugin {
   return {
@@ -16,11 +35,7 @@ function developmentContentSecurityPolicyPlugin(): Plugin {
         throw new Error('The development server URLs must be resolved before transforming the CSP.');
       }
 
-      const webSocketSources = [...resolvedUrls.local, ...resolvedUrls.network].map((serverUrl) => {
-        const webSocketUrl = new URL(serverUrl);
-        webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
-        return webSocketUrl.href;
-      });
+      const webSocketSources = developmentWebSocketSources([...resolvedUrls.local, ...resolvedUrls.network]);
 
       const productionCspAttribute = `content="${productionContentSecurityPolicy}"`;
       if (!html.includes(productionCspAttribute)) {

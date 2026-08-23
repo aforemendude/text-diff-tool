@@ -38,8 +38,11 @@ Try it now: https://aforemendude.github.io/text-diff-tool/
 
 ### Prerequisites
 
-- Node.js v24
-- npm (included with Node.js)
+- Node.js `^20.19.0 || ^22.12.0 || >=24.0.0`
+- npm 11 (the reproducible package-manager version is recorded as npm 11.17.0)
+
+The Node.js range is the intersection of the Vite 8 and Vitest 4 requirements, the strictest constraints in the
+installed dependency tree. The same range and the npm major are enforced for repository commands through `devEngines`.
 
 ### Installation
 
@@ -101,11 +104,14 @@ npm run preview
 
 ### Tests
 
-Run the Playwright end-to-end tests (the production build runs first, then the preview server starts automatically):
+Run the Playwright end-to-end tests (the production build runs first, then a fresh preview server starts automatically):
 
 ```bash
 npm run integration
 ```
+
+This command never reuses a process already listening on the preview port (`4173`); an occupied port is reported as an
+error so the tests cannot accidentally run against an unrelated build.
 
 To test against an already-running development server, set `BASE_URL` and use the development integration script. This
 skips both the production build and preview server. Extra arguments can select a focused spec or browser:
@@ -147,6 +153,8 @@ npm run deploy
 ## License and Credits
 
 TextDiffTool is licensed under the [MIT License](./LICENSE).
+
+The TextDiffTool logo is original artwork created for this project and is distributed under the same MIT License.
 
 Copyright and license terms for the JavaScript libraries shipped in the browser bundle are collected in the
 [third-party software notices](./public/THIRD_PARTY_NOTICES.txt).

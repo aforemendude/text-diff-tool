@@ -48,6 +48,6 @@ export default defineConfig({
     : {
         command: 'npm run preview',
         url: previewBaseURL,
-        reuseExistingServer: true,
+        reuseExistingServer: false,
       },
 });

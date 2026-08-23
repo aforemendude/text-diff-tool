@@ -109,7 +109,7 @@ Run a focused browser spec against an existing development server:
 BASE_URL=http://localhost:5173 npm run integration:dev -- playwright/comparison.spec.ts --project=chromium
 ```
 
-Run the production-build, three-browser suite:
+Run the production-build, three-browser suite against a freshly started preview server (port `4173` must be free):
 
 ```bash
 npm run integration

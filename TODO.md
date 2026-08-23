@@ -1,5 +1,11 @@
 # TODO
 
+## Add continuous integration
+
+- Add a checked-in workflow that installs the declared Node.js and npm toolchain and runs formatting, unit, and browser
+  checks for proposed changes.
+- Keep GitHub Pages deployment manual until a separate deployment workflow and review policy are chosen.
+
 ## Virtualize comparison results
 
 - Render only visible comparison rows while preserving side-by-side alignment and collapsed unchanged sections.

@@ -169,8 +169,13 @@ async function startApplication(url, isExternallyManaged) {
     },
   );
 
-  await waitForApplication(url, serverProcess);
-  return serverProcess;
+  try {
+    await waitForApplication(url, serverProcess);
+    return serverProcess;
+  } catch (error) {
+    await stopApplication(serverProcess);
+    throw error;
+  }
 }
 
 async function stopApplication(serverProcess) {
@@ -326,6 +331,8 @@ async function main() {
   const { definitions, shouldClearDirectory } = resolveScreenshotSelection();
   const { isExternallyManaged, url: applicationUrl } = resolveApplicationUrl();
   if (shouldClearDirectory) {
+    // Full regeneration intentionally starts from an empty directory. These screenshots are tracked by Git, so the
+    // previous set remains recoverable if server startup, browser launch, or capture fails partway through the run.
     await clearScreenshotDirectory();
   } else {
     await mkdir(screenshotDirectory, { recursive: true });
