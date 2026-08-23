@@ -1,8 +1,13 @@
+/// <reference types="node" />
+
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { findElement } from '../test/reactElements';
 import type { DiffResult, LineDiff } from '../diff/types';
 import CompareDisplay from './CompareDisplay';
+
+const compareDisplayStyles = readFileSync(new URL('./CompareDisplay.css', import.meta.url), 'utf8');
 
 const reactMocks = vi.hoisted(() => ({ useState: vi.fn() }));
 
@@ -37,6 +42,15 @@ function configureExpandedSections(expandedSections = new Set<string>()) {
 function classes(markup: string, baseClass: string): string[] {
   const expression = new RegExp(`class="(${baseClass}(?: [^"]+)?)"`, 'g');
   return [...markup.matchAll(expression)].map((match) => match[1]);
+}
+
+function cssDeclarations(selector: string): string {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const declarations = compareDisplayStyles.match(new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`))?.[1];
+  if (declarations === undefined) {
+    throw new Error(`Missing CSS rule for ${selector}`);
+  }
+  return declarations;
 }
 
 describe('CompareDisplay', () => {
@@ -171,35 +185,51 @@ describe('CompareDisplay', () => {
     expect(markup.match(/class="visually-hidden">Changed line\. <\/span>/g)).toHaveLength(2);
   });
 
-  it('can disable visual text decorations without removing insertion and deletion semantics', () => {
-    const markup = renderToStaticMarkup(
-      <CompareDisplay
-        diffResult={result(
-          [
-            {
-              lineNumber: 1,
-              type: 'modify',
-              content: 'old',
-              charDiffs: [{ type: 'delete', text: 'old' }],
-            },
-          ],
-          [
-            {
-              lineNumber: 1,
-              type: 'modify',
-              content: 'new',
-              charDiffs: [{ type: 'insert', text: 'new' }],
-            },
-          ],
-        )}
-        showTextDecorations={false}
-      />,
+  it('toggles the decoration styling hook without removing insertion and deletion semantics', () => {
+    const diffResult = result(
+      [
+        {
+          lineNumber: 1,
+          type: 'modify',
+          content: 'old',
+          charDiffs: [{ type: 'delete', text: 'old' }],
+        },
+      ],
+      [
+        {
+          lineNumber: 1,
+          type: 'modify',
+          content: 'new',
+          charDiffs: [{ type: 'insert', text: 'new' }],
+        },
+      ],
+    );
+    const decoratedMarkup = renderToStaticMarkup(<CompareDisplay diffResult={diffResult} />);
+    const colorOnlyMarkup = renderToStaticMarkup(
+      <CompareDisplay diffResult={diffResult} showTextDecorations={false} />,
     );
 
-    expect(markup).toContain('<main class="compare-display" aria-label="Comparison results">');
-    expect(markup).not.toContain('compare-display--text-decorations');
-    expect(markup).toContain('<del class="char-diff char-diff--delete"');
-    expect(markup).toContain('<ins class="char-diff char-diff--insert"');
+    expect(decoratedMarkup).toContain(
+      '<main class="compare-display compare-display--text-decorations" aria-label="Comparison results">',
+    );
+    expect(colorOnlyMarkup).toContain('<main class="compare-display" aria-label="Comparison results">');
+    expect(colorOnlyMarkup).not.toContain('compare-display--text-decorations');
+    expect(colorOnlyMarkup).toContain('<del class="char-diff char-diff--delete"');
+    expect(colorOnlyMarkup).toContain('<ins class="char-diff char-diff--insert"');
+  });
+
+  it('defines decoration and color-only CSS contracts for both change types', () => {
+    expect(cssDeclarations('.char-diff--delete')).toContain('text-decoration-line: none;');
+    expect(cssDeclarations('.char-diff--insert')).toContain('text-decoration-line: none;');
+
+    const decoratedDelete = cssDeclarations('.compare-display--text-decorations .char-diff--delete');
+    expect(decoratedDelete).toContain('text-decoration-line: line-through;');
+    expect(decoratedDelete).toContain('text-decoration-color: #8c1d18;');
+
+    const decoratedInsert = cssDeclarations('.compare-display--text-decorations .char-diff--insert');
+    expect(decoratedInsert).toContain('text-decoration-line: underline;');
+    expect(decoratedInsert).toContain('text-decoration-style: double;');
+    expect(decoratedInsert).toContain('text-decoration-color: #096b2e;');
   });
 
   it('exposes the comparison as a labelled table with column headers, rows, and cells', () => {

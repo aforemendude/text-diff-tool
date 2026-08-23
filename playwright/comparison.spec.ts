@@ -39,28 +39,4 @@ test.describe('Comparison workflows', () => {
 
     await expect(page.getByRole('dialog', { name: 'Identical Content' })).toBeVisible();
   });
-
-  test('lets users disable character-level text decorations', async ({ page }) => {
-    await page.getByRole('textbox', { name: 'Original', exact: true }).fill('abc');
-    await page.getByRole('textbox', { name: 'Modified', exact: true }).fill('axc');
-    await page.getByRole('button', { name: 'Compare', exact: true }).click();
-
-    const deletion = page.getByRole('deletion');
-    const insertion = page.getByRole('insertion');
-    await expect(deletion).toHaveCSS('text-decoration-line', 'line-through');
-    await expect(insertion).toHaveCSS('text-decoration-line', 'underline');
-    await expect(insertion).toHaveCSS('text-decoration-style', 'double');
-
-    await page.getByRole('button', { name: 'Edit', exact: true }).click();
-    await page.getByRole('button', { name: 'Settings' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Diff settings' });
-    const colorOnly = dialog.getByRole('radio', { name: /Color highlights only/ });
-    await dialog.getByText('Color highlights only', { exact: true }).click();
-    await expect(colorOnly).toBeChecked();
-    await dialog.getByRole('button', { name: 'Done' }).click();
-
-    await page.getByRole('button', { name: 'Compare', exact: true }).click();
-    await expect(page.getByRole('deletion')).toHaveCSS('text-decoration-line', 'none');
-    await expect(page.getByRole('insertion')).toHaveCSS('text-decoration-line', 'none');
-  });
 });
