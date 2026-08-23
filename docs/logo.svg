@@ -4,5 +4,5 @@
   <rect x="13.25" y="3" width="8.25" height="18" rx="2.25" fill="#087d74" />
   <path d="M5.25 7.5H8M5.25 11H7.25M5.25 14.5H8" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" />
   <path d="M16 7.5H18.75M17 11H18.75M16 14.5H18.75" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" />
-  <path d="M11.75 9.25L13 10.5L11.75 11.75M12.25 14.75L11 16L12.25 17.25" fill="none" stroke="#374151" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M11.75 8.25L13 9.5L11.75 10.75M12.25 13.75L11 15L12.25 16.25" fill="none" stroke="#374151" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
 </svg>
