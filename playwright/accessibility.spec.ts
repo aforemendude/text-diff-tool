@@ -162,8 +162,8 @@ test.describe('Accessibility', () => {
     await expect(selectedDiffMode).toBeFocused();
     await expectVisibleFocus(selectedDiffMode.locator('..'));
 
-    const efficiencyCleanup = dialog.getByRole('radio', { name: /Efficiency Cleanup/ });
-    await dialog.getByText('Efficiency Cleanup', { exact: true }).click();
+    const efficiencyCleanup = dialog.getByRole('radio', { name: /Efficiency cleanup/ });
+    await dialog.getByText('Efficiency cleanup', { exact: true }).click();
     await expect(efficiencyCleanup).toBeChecked();
     const editCost = dialog.getByRole('spinbutton', { name: 'Edit cost', exact: true });
     await expect(editCost).toBeEnabled();
@@ -171,7 +171,7 @@ test.describe('Accessibility', () => {
     await editCost.focus();
     await expectVisibleFocus(editCost);
 
-    await dialog.getByText('Just grapheme', { exact: true }).click();
+    await dialog.getByText('Grapheme only', { exact: true }).click();
     await dialog.getByText('Adaptive', { exact: true }).click();
     await editCost.fill('7.5');
     await dialog.getByText('Color highlights only', { exact: true }).click();
@@ -180,9 +180,9 @@ test.describe('Accessibility', () => {
     await page.reload();
     await page.getByRole('button', { name: 'Settings' }).click();
     const restoredDialog = page.getByRole('dialog', { name: 'Diff settings' });
-    await expect(restoredDialog.getByRole('radio', { name: /Just grapheme/ })).toBeChecked();
+    await expect(restoredDialog.getByRole('radio', { name: /Grapheme only/ })).toBeChecked();
     await expect(restoredDialog.getByRole('radio', { name: /Adaptive/ })).toBeChecked();
-    await expect(restoredDialog.getByRole('radio', { name: /Efficiency Cleanup/ })).toBeChecked();
+    await expect(restoredDialog.getByRole('radio', { name: /Efficiency cleanup/ })).toBeChecked();
     await expect(restoredDialog.getByRole('spinbutton', { name: 'Edit cost', exact: true })).toHaveValue('7.5');
     await expect(restoredDialog.getByRole('radio', { name: /Color highlights only/ })).toBeChecked();
   });

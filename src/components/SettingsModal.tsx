@@ -33,7 +33,7 @@ const diffModes: SettingOption<DiffMode>[] = [
   },
   {
     value: 'grapheme',
-    label: 'Just grapheme',
+    label: 'Grapheme only',
     description: 'Compare the entire content at once while keeping line numbers visible.',
   },
 ];
@@ -55,18 +55,18 @@ const algorithms: SettingOption<DiffAlgorithm>[] = [
 const cleanupModes: SettingOption<DiffCleanupMode>[] = [
   {
     value: 'none',
-    label: 'No Cleanup',
+    label: 'No cleanup',
     description: 'Keep the algorithm’s raw result without post-processing.',
     isDefault: true,
   },
   {
     value: 'semantic',
-    label: 'Semantic Cleanup',
+    label: 'Semantic cleanup',
     description: 'Shift and merge edits into boundaries that are easier to read.',
   },
   {
     value: 'efficiency',
-    label: 'Efficiency Cleanup',
+    label: 'Efficiency cleanup',
     description: 'Merge small equalities to produce fewer, larger edits.',
   },
 ];

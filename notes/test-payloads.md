@@ -39,8 +39,8 @@ Comparison must not error or mutate global prototypes.
 
 ## Reflowed text
 
-Compare this pair first with the default **Line then grapheme** mode. Then select **Edit**, change the setting to **Just
-grapheme**, and compare again.
+Compare this pair first with the default **Line then grapheme** mode. Then select **Edit**, change the setting to
+**Grapheme only**, and compare again.
 
 Original:
 
@@ -56,7 +56,7 @@ The migration guide keeps every shared word visible, even when this deliberately
 across the narrow comparison pane. Only the line break moves; the wording stays exactly the same.
 ```
 
-**Just grapheme** should retain almost all text as equal and show only the moved line break/space. The default mode
+**Grapheme only** should retain almost all text as equal and show only the moved line break/space. The default mode
 produces much broader line-level changes. The first Original line is also long enough to exercise visual wrapping in a
 narrow pane.
 

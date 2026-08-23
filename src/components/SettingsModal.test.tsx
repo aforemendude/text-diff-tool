@@ -107,6 +107,21 @@ describe('SettingsModal', () => {
     ]);
     expect(defaultBadges.map((badge) => badge.props.children)).toEqual(['Default', 'Default', 'Default', 'Default']);
     expect(
+      findElements(tree, (element) => element.props.className === 'settings-modal__option-label').map(
+        (label) => label.props.children,
+      ),
+    ).toEqual([
+      'Line then grapheme',
+      'Grapheme only',
+      'Myers',
+      'Adaptive',
+      'No cleanup',
+      'Semantic cleanup',
+      'Efficiency cleanup',
+      'Color and text decorations',
+      'Color highlights only',
+    ]);
+    expect(
       findElements(tree, (element) => element.props.className === 'settings-modal__option-label')
         .slice(-2)
         .map((label) => label.props.children),
