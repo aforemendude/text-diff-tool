@@ -237,6 +237,27 @@ test.describe('Accessibility', () => {
     await expect(page.getByRole('dialog', { name: 'About TextDiffTool' })).toBeVisible();
   });
 
+  test('returns header controls to the first row when they fit', async ({ page }) => {
+    const controlsShareBrandRow = async () => {
+      const [brand, controls] = await Promise.all([
+        page.locator('.header__brand').boundingBox(),
+        page.locator('.header__controls').boundingBox(),
+      ]);
+
+      expect(brand).not.toBeNull();
+      expect(controls).not.toBeNull();
+      return Math.min(brand!.y + brand!.height, controls!.y + controls!.height) > Math.max(brand!.y, controls!.y);
+    };
+
+    await page.setViewportSize({ width: 700, height: 667 });
+    expect(await controlsShareBrandRow()).toBe(false);
+    await expectGroupsDoNotOverlap(page);
+
+    await page.setViewportSize({ width: 800, height: 667 });
+    expect(await controlsShareBrandRow()).toBe(true);
+    await expectGroupsDoNotOverlap(page);
+  });
+
   test('preserves header content when text is resized to 200 percent', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.evaluate(() => {
