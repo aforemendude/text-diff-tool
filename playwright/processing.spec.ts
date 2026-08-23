@@ -27,6 +27,81 @@ test.describe('Diff processing', () => {
     expect(page.workers()).toEqual([worker]);
   });
 
+  test('keeps editing available and retries worker creation when eager startup fails', async ({ page }) => {
+    await page.addInitScript(() => {
+      const browser = globalThis as unknown as {
+        Worker: Function;
+        addEventListener: (
+          type: 'click',
+          listener: (event: { target: { id?: string } | null }) => void,
+          options: { capture: true },
+        ) => void;
+      };
+      const NativeWorker = browser.Worker;
+      const state = { allowConstruction: false, createCount: 0 };
+      Object.defineProperty(globalThis, '__diffWorkerRetryTestState', { value: state });
+
+      browser.addEventListener(
+        'click',
+        (event) => {
+          if (event.target?.id === 'compare-btn') {
+            state.allowConstruction = true;
+          }
+        },
+        { capture: true },
+      );
+
+      const RetryableWorker = new Proxy(NativeWorker, {
+        construct(target, argumentsList) {
+          state.createCount += 1;
+
+          if (!state.allowConstruction) {
+            throw new DOMException('Workers are blocked during preload.', 'SecurityError');
+          }
+
+          return Reflect.construct(target, argumentsList);
+        },
+      });
+
+      Object.defineProperty(globalThis, 'Worker', { configurable: true, value: RetryableWorker });
+    });
+
+    const pageErrors: Error[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error));
+    await page.goto('/');
+
+    await expect(page.locator('#original')).toBeVisible();
+    await expect(page.locator('#modified')).toBeVisible();
+    const preloadAttempts = await page.evaluate(
+      () =>
+        (
+          globalThis as typeof globalThis & {
+            __diffWorkerRetryTestState: { createCount: number };
+          }
+        ).__diffWorkerRetryTestState.createCount,
+    );
+    expect(preloadAttempts).toBeGreaterThan(0);
+
+    await page.locator('#original').fill('before');
+    await page.locator('#modified').fill('after');
+    await page.locator('#compare-btn').click();
+
+    await expect(page.locator('.compare-display')).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (
+              globalThis as typeof globalThis & {
+                __diffWorkerRetryTestState: { createCount: number };
+              }
+            ).__diffWorkerRetryTestState.createCount,
+        ),
+      )
+      .toBe(preloadAttempts + 1);
+    expect(pageErrors).toEqual([]);
+  });
+
   test('keeps the processing modal open until the user terminates the worker', async ({ page }) => {
     await page.addInitScript(() => {
       const state = { createCount: 0, postMessageCount: 0, terminateCount: 0 };

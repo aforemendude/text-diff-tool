@@ -208,6 +208,29 @@ describe('App', () => {
     });
   });
 
+  it('keeps the edit view available and retries on comparison when eager worker initialization fails', async () => {
+    const deferred = createDeferredProcess();
+    workerMocks.initializeDiffWorker.mockImplementationOnce(() => {
+      throw new DOMException('Workers are blocked.', 'SecurityError');
+    });
+    workerMocks.startDiffProcess.mockReturnValue(deferred.process);
+
+    const { tree, setters } = renderApp({ originalText: 'before', modifiedText: 'after' });
+    const header = findElement(tree, (element) => element.type === 'mock-header');
+    const textAreas = findElement(tree, (element) => element.type === 'mock-text-areas');
+
+    expect(textAreas.props).toMatchObject({ originalText: 'before', modifiedText: 'after' });
+    expect(workerMocks.initializeDiffWorker).toHaveBeenCalledOnce();
+
+    (header.props.onToggleMode as () => void)();
+
+    expect(workerMocks.startDiffProcess).toHaveBeenCalledOnce();
+    expect(setters[7]).toHaveBeenCalledExactlyOnceWith(true);
+
+    deferred.resolve({ status: 'identical' });
+    await deferred.process.outcome;
+  });
+
   it.each<{ stateLabel: string; overrides: Partial<AppState>; expectedStatus: string }>([
     { stateLabel: 'editing', overrides: {}, expectedStatus: '' },
     { stateLabel: 'processing', overrides: { isProcessing: true }, expectedStatus: 'Comparison in progress.' },

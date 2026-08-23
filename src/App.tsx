@@ -33,7 +33,11 @@ function App() {
   const { diffMode, diffAlgorithm, diffCleanupMode, editCost, showTextDecorations } = diffSettings;
 
   useEffect(() => {
-    initializeDiffWorker();
+    try {
+      initializeDiffWorker();
+    } catch {
+      // Comparing will retry worker creation and surface any continuing failure to the user.
+    }
 
     return () => {
       const activeProcess = diffProcessRef.current;

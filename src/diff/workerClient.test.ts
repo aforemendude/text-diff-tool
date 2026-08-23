@@ -336,18 +336,23 @@ describe('DiffWorkerClient', () => {
     await rejection;
   });
 
-  it('initializes one module-level client and routes shared requests through its worker', async () => {
+  it('retries failed module-level initialization and routes shared requests through one worker', async () => {
     const { factory, workers } = createWorkerFactoryHarness();
     inlineWorkerMocks.constructor.mockReset();
+    inlineWorkerMocks.constructor.mockImplementationOnce(function UnavailableInlineWorker() {
+      throw new Error('Worker construction failed');
+    });
     inlineWorkerMocks.constructor.mockImplementation(function InlineWorkerMock() {
       return factory();
     });
+
+    expect(() => initializeDiffWorker()).toThrow('Worker construction failed');
 
     const process = startDiffProcess('shared old', 'shared new', options);
     const initializedClient = initializeDiffWorker();
 
     expect(initializeDiffWorker()).toBe(initializedClient);
-    expect(inlineWorkerMocks.constructor).toHaveBeenCalledOnce();
+    expect(inlineWorkerMocks.constructor).toHaveBeenCalledTimes(2);
     expect(workers[0].postMessage).toHaveBeenCalledExactlyOnceWith({
       type: 'compute-diff',
       originalText: 'shared old',
