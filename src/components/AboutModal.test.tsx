@@ -46,6 +46,12 @@ describe('AboutModal', () => {
         rel: 'noopener noreferrer',
         children: 'JetBrains Mono license',
       }),
+      expect.objectContaining({
+        href: expect.stringMatching(/\/THIRD_PARTY_NOTICES\.txt$/),
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        children: 'Runtime library licenses and notices',
+      }),
     ]);
   });
 });

@@ -24,6 +24,10 @@ test('About modal can be opened and closed', async ({ page }) => {
     'href',
     '/text-diff-tool/fonts/jetbrains-mono/OFL.txt',
   );
+  await expect(page.getByRole('link', { name: 'Runtime library licenses and notices' })).toHaveAttribute(
+    'href',
+    '/text-diff-tool/THIRD_PARTY_NOTICES.txt',
+  );
 
   // Close the modal using the footer button
   await page.locator('.modal__footer').getByRole('button', { name: 'Close' }).click();

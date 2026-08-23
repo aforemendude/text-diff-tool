@@ -5,7 +5,8 @@ interface AboutModalProps {
   onClose: () => void;
 }
 
-const fontLicenseBaseUrl = `${import.meta.env.BASE_URL}fonts`;
+const publicAssetBaseUrl = import.meta.env.BASE_URL;
+const fontLicenseBaseUrl = `${publicAssetBaseUrl}fonts`;
 
 function AboutModal({ onClose }: AboutModalProps) {
   return (
@@ -54,6 +55,11 @@ function AboutModal({ onClose }: AboutModalProps) {
           <span aria-hidden="true">·</span>
           <a href={`${fontLicenseBaseUrl}/jetbrains-mono/OFL.txt`} target="_blank" rel="noopener noreferrer">
             JetBrains Mono license
+          </a>
+        </p>
+        <p className="about-modal__software-license-link">
+          <a href={`${publicAssetBaseUrl}THIRD_PARTY_NOTICES.txt`} target="_blank" rel="noopener noreferrer">
+            Runtime library licenses and notices
           </a>
         </p>
       </div>
