@@ -4,7 +4,6 @@ import type { DiffWorkerRequest } from './diffWorkerProtocol';
 
 const diffUtilsMocks = vi.hoisted(() => ({ computeDiff: vi.fn() }));
 
-vi.mock('virtual:diff-match-patch-runtime', () => ({}));
 vi.mock('../utils/diffUtils', () => ({ computeDiff: diffUtilsMocks.computeDiff }));
 
 const postMessage = vi.fn();

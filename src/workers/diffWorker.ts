@@ -1,6 +1,5 @@
 /// <reference lib="webworker" />
 
-import 'virtual:diff-match-patch-runtime';
 import { computeDiff } from '../utils/diffUtils';
 import type { DiffWorkerRequest, DiffWorkerResponse } from './diffWorkerProtocol';
 

@@ -6,7 +6,7 @@ interface ModalProps {
   message?: string;
   children?: ReactNode;
   onClose: () => void;
-  variant?: 'error' | 'info' | 'warning';
+  variant?: 'error' | 'info';
   className?: string;
   bodyClassName?: string;
   actionLabel?: string;

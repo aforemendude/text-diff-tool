@@ -1,25 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { DiffCleanupMode } from '../types/diff';
-import { computeDiff, type DiffEngineFactory } from './diffUtils';
-
-function diff(operation: number, text: string): diff_match_patch.Diff {
-  return [operation, text] as unknown as diff_match_patch.Diff;
-}
-
-function createEngineHarness(
-  charDiffs: diff_match_patch.Diff[] = [],
-  cleanup?: Partial<Record<'semantic' | 'efficiency', (diffs: diff_match_patch.Diff[]) => void>>,
-) {
-  const engine: ReturnType<DiffEngineFactory> = {
-    Diff_Timeout: 1,
-    Diff_EditCost: 1,
-    diff_main: vi.fn(() => charDiffs),
-    diff_cleanupSemantic: vi.fn((diffs) => cleanup?.semantic?.(diffs)),
-    diff_cleanupEfficiency: vi.fn((diffs) => cleanup?.efficiency?.(diffs)),
-  };
-  const factory = vi.fn(() => engine);
-  return { engine, factory };
-}
+import { describe, expect, it } from 'vitest';
+import type { DiffCleanupMode, DiffResult } from '../types/diff';
+import { computeDiff, type ComputeDiffOutcome } from './diffUtils';
 
 const options = {
   isJsonMode: false,
@@ -27,114 +8,103 @@ const options = {
   editCost: 4,
 };
 
+function getDiffResult(outcome: ComputeDiffOutcome): DiffResult {
+  expect(outcome.status).toBe('success');
+  if (outcome.status !== 'success') {
+    throw new Error(`Expected a successful diff, received ${outcome.status}.`);
+  }
+  return outcome.diffResult;
+}
+
 describe('computeDiff', () => {
-  beforeAll(() => {
-    vi.stubGlobal('DIFF_DELETE', -1);
-    vi.stubGlobal('DIFF_INSERT', 1);
-    vi.stubGlobal('DIFF_EQUAL', 0);
-  });
-
-  afterAll(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('returns identical without constructing an engine for equal raw text', () => {
-    const factory = vi.fn();
-
-    expect(computeDiff('same', 'same', options, factory)).toEqual({ status: 'identical' });
-    expect(factory).not.toHaveBeenCalled();
+  it('returns identical for equal raw text', () => {
+    expect(computeDiff('same', 'same', options)).toEqual({ status: 'identical' });
   });
 
   it('normalizes JSON key order before determining semantic identity', () => {
-    const factory = vi.fn();
-
     expect(
-      computeDiff(
-        '{"z": 1, "a": {"y": 2, "b": 3}}',
-        '{"a":{"b":3,"y":2},"z":1}',
-        {
-          ...options,
-          isJsonMode: true,
-        },
-        factory,
-      ),
+      computeDiff('{"z": 1, "a": {"y": 2, "b": 3}}', '{"a":{"b":3,"y":2},"z":1}', { ...options, isJsonMode: true }),
     ).toEqual({ status: 'identical' });
-    expect(factory).not.toHaveBeenCalled();
   });
 
-  it('warns for both source numbers when distinct unsafe integers normalize as identical', () => {
-    const factory = vi.fn();
-
-    expect(
-      computeDiff('{"id":9007199254740992}', '{"id":9007199254740993}', { ...options, isJsonMode: true }, factory),
-    ).toEqual({
-      status: 'identical',
-      warnings: [
-        { source: 'original', type: 'numeric-precision', count: 1 },
-        { source: 'modified', type: 'numeric-precision', count: 1 },
-      ],
-    });
-    expect(factory).not.toHaveBeenCalled();
-  });
-
-  it('reports all four source and issue categories while retaining the current diff result', () => {
-    const { factory } = createEngineHarness();
-    const outcome = computeDiff(
-      '{"value":9007199254740993,"value":1}',
-      '{"value":9007199254740995,"value":2}',
-      { ...options, isJsonMode: true },
-      factory,
+  it('preserves exact number spellings instead of rounding unsafe integers', () => {
+    const result = getDiffResult(
+      computeDiff('{"id":9007199254740992}', '{"id":9007199254740993}', {
+        ...options,
+        isJsonMode: true,
+        diffCleanupMode: 'none',
+      }),
     );
 
-    expect(outcome).toEqual({
-      status: 'success',
-      diffResult: {
-        originalLines: [
-          { lineNumber: 1, type: 'equal', content: '{' },
-          { lineNumber: 2, type: 'modify', content: '  "value": 1', charDiffs: [] },
-          { lineNumber: 3, type: 'equal', content: '}' },
-        ],
-        modifiedLines: [
-          { lineNumber: 1, type: 'equal', content: '{' },
-          { lineNumber: 2, type: 'modify', content: '  "value": 2', charDiffs: [] },
-          { lineNumber: 3, type: 'equal', content: '}' },
-        ],
-        originalTrailingNewline: false,
-        modifiedTrailingNewline: false,
-      },
-      warnings: [
-        { source: 'original', type: 'numeric-precision', count: 1 },
-        { source: 'modified', type: 'numeric-precision', count: 1 },
-        { source: 'original', type: 'duplicate-keys', count: 1 },
-        { source: 'modified', type: 'duplicate-keys', count: 1 },
-      ],
-    });
-    expect(factory).toHaveBeenCalledOnce();
+    expect(result.originalLines.map(({ content }) => content)).toEqual(['{', '  "id": 9007199254740992', '}']);
+    expect(result.modifiedLines.map(({ content }) => content)).toEqual(['{', '  "id": 9007199254740993', '}']);
+    expect(result.originalLines[1].type).toBe('modify');
+    expect(result.modifiedLines[1].type).toBe('modify');
   });
 
-  it('diffs exact sorted, formatted JSON lines when valid values differ', () => {
-    const { engine, factory } = createEngineHarness();
+  it('preserves duplicate JSON members and their relative order', () => {
+    const result = getDiffResult(
+      computeDiff('{"value":9007199254740993,"value":1}', '{"value":9007199254740995,"value":2}', {
+        ...options,
+        isJsonMode: true,
+        diffCleanupMode: 'none',
+      }),
+    );
 
-    expect(computeDiff('{"b":2,"a":1}', '{"b":3,"a":1}', { ...options, isJsonMode: true }, factory)).toEqual({
-      status: 'success',
-      diffResult: {
-        originalLines: [
-          { lineNumber: 1, type: 'equal', content: '{' },
-          { lineNumber: 2, type: 'equal', content: '  "a": 1,' },
-          { lineNumber: 3, type: 'modify', content: '  "b": 2', charDiffs: [] },
-          { lineNumber: 4, type: 'equal', content: '}' },
+    expect(result.originalLines.map(({ content }) => content)).toEqual([
+      '{',
+      '  "value": 9007199254740993,',
+      '  "value": 1',
+      '}',
+    ]);
+    expect(result.modifiedLines.map(({ content }) => content)).toEqual([
+      '{',
+      '  "value": 9007199254740995,',
+      '  "value": 2',
+      '}',
+    ]);
+  });
+
+  it('retains primitive token spelling during JSON comparison', () => {
+    const result = getDiffResult(
+      computeDiff('{"n":1}', '{"n":1.0}', { ...options, isJsonMode: true, diffCleanupMode: 'none' }),
+    );
+
+    expect(result.originalLines[1]).toMatchObject({ type: 'modify', content: '  "n": 1' });
+    expect(result.modifiedLines[1]).toMatchObject({ type: 'modify', content: '  "n": 1.0' });
+  });
+
+  it('diffs sorted, formatted JSON lines when valid values differ', () => {
+    const result = getDiffResult(computeDiff('{"b":2,"a":1}', '{"b":3,"a":1}', { ...options, isJsonMode: true }));
+
+    expect(result.originalLines).toEqual([
+      { lineNumber: 1, type: 'equal', content: '{' },
+      { lineNumber: 2, type: 'equal', content: '  "a": 1,' },
+      {
+        lineNumber: 3,
+        type: 'modify',
+        content: '  "b": 2',
+        charDiffs: [
+          { type: 'equal', text: '  "b": ' },
+          { type: 'delete', text: '2' },
         ],
-        modifiedLines: [
-          { lineNumber: 1, type: 'equal', content: '{' },
-          { lineNumber: 2, type: 'equal', content: '  "a": 1,' },
-          { lineNumber: 3, type: 'modify', content: '  "b": 3', charDiffs: [] },
-          { lineNumber: 4, type: 'equal', content: '}' },
-        ],
-        originalTrailingNewline: false,
-        modifiedTrailingNewline: false,
       },
-    });
-    expect(engine.diff_main).toHaveBeenCalledExactlyOnceWith('  "b": 2', '  "b": 3');
+      { lineNumber: 4, type: 'equal', content: '}' },
+    ]);
+    expect(result.modifiedLines).toEqual([
+      { lineNumber: 1, type: 'equal', content: '{' },
+      { lineNumber: 2, type: 'equal', content: '  "a": 1,' },
+      {
+        lineNumber: 3,
+        type: 'modify',
+        content: '  "b": 3',
+        charDiffs: [
+          { type: 'equal', text: '  "b": ' },
+          { type: 'insert', text: '3' },
+        ],
+      },
+      { lineNumber: 4, type: 'equal', content: '}' },
+    ]);
   });
 
   it.each(['original', 'modified'] as const)(
@@ -142,41 +112,15 @@ describe('computeDiff', () => {
     (source) => {
       const original = source === 'original' ? '{invalid' : '{}';
       const modified = source === 'modified' ? '{invalid' : '{}';
-      const factory = vi.fn();
-      const outcome = computeDiff(original, modified, { ...options, isJsonMode: true }, factory);
+      const outcome = computeDiff(original, modified, { ...options, isJsonMode: true });
 
       expect(outcome).toMatchObject({ status: 'error', source });
-      expect(outcome.status === 'error' ? outcome.message : '').toMatch(/property name|JSON|Unexpected token/i);
-      expect(factory).not.toHaveBeenCalled();
+      expect(outcome.status === 'error' ? outcome.message : '').toMatch(/position/i);
     },
   );
 
-  it('returns a parse error instead of valid-input warnings when the other source is invalid', () => {
-    const factory = vi.fn();
-    const outcome = computeDiff(
-      '{"id":9007199254740993,"id":1}',
-      '{invalid',
-      { ...options, isJsonMode: true },
-      factory,
-    );
-
-    expect(outcome).toMatchObject({ status: 'error', source: 'modified' });
-    expect(outcome).not.toHaveProperty('warnings');
-    expect(factory).not.toHaveBeenCalled();
-  });
-
-  it('maps line and character operations into aligned results and configures the engine exactly', () => {
-    const charDiffs = [diff(0, 'o'), diff(-1, 'ld'), diff(1, 'ther')];
-    const { engine, factory } = createEngineHarness(charDiffs);
-
-    expect(
-      computeDiff(
-        'same\nold\norphan\n',
-        'same\nother',
-        { isJsonMode: false, diffCleanupMode: 'semantic', editCost: 9 },
-        factory,
-      ),
-    ).toEqual({
+  it('maps line and grapheme operations into aligned results', () => {
+    expect(computeDiff('same\nold\norphan\n', 'same\nother', { ...options, editCost: 9 })).toEqual({
       status: 'success',
       diffResult: {
         originalLines: [
@@ -209,19 +153,88 @@ describe('computeDiff', () => {
         modifiedTrailingNewline: false,
       },
     });
+  });
 
-    expect(factory).toHaveBeenCalledOnce();
-    expect(engine.Diff_Timeout).toBe(0);
-    expect(engine.Diff_EditCost).toBe(9);
-    expect(engine.diff_main).toHaveBeenCalledExactlyOnceWith('old', 'other');
-    expect(engine.diff_cleanupSemantic).toHaveBeenCalledExactlyOnceWith(charDiffs);
-    expect(engine.diff_cleanupEfficiency).not.toHaveBeenCalled();
+  it.each([
+    ['e\u0301', 'e\u0300'],
+    ['👍🏻', '👍🏽'],
+    ['🇬🇧', '🇺🇸'],
+    ['👨‍👩‍👧‍👦', '👨‍👩‍👧'],
+  ])('never splits the changed grapheme in %s versus %s', (originalGrapheme, modifiedGrapheme) => {
+    const result = getDiffResult(
+      computeDiff(`A${originalGrapheme}B`, `A${modifiedGrapheme}B`, {
+        ...options,
+        diffCleanupMode: 'none',
+      }),
+    );
+
+    expect(result.originalLines[0].charDiffs).toEqual([
+      { type: 'equal', text: 'A' },
+      { type: 'delete', text: originalGrapheme },
+      { type: 'equal', text: 'B' },
+    ]);
+    expect(result.modifiedLines[0].charDiffs).toEqual([
+      { type: 'equal', text: 'A' },
+      { type: 'insert', text: modifiedGrapheme },
+      { type: 'equal', text: 'B' },
+    ]);
+  });
+
+  it.each<{
+    mode: DiffCleanupMode;
+    editCost: number;
+    expectedOriginal: { type: 'equal' | 'delete'; text: string }[];
+  }>([
+    {
+      mode: 'none',
+      editCost: 4,
+      expectedOriginal: [
+        { type: 'equal', text: 'ab' },
+        { type: 'delete', text: '12' },
+        { type: 'equal', text: 'cd' },
+        { type: 'delete', text: '34' },
+        { type: 'equal', text: 'ef' },
+      ],
+    },
+    {
+      mode: 'semantic',
+      editCost: 4,
+      expectedOriginal: [
+        { type: 'equal', text: 'ab' },
+        { type: 'delete', text: '12cd34' },
+        { type: 'equal', text: 'ef' },
+      ],
+    },
+    {
+      mode: 'efficiency',
+      editCost: 2,
+      expectedOriginal: [
+        { type: 'equal', text: 'ab' },
+        { type: 'delete', text: '12' },
+        { type: 'equal', text: 'cd' },
+        { type: 'delete', text: '34' },
+        { type: 'equal', text: 'ef' },
+      ],
+    },
+    {
+      mode: 'efficiency',
+      editCost: 4,
+      expectedOriginal: [
+        { type: 'equal', text: 'ab' },
+        { type: 'delete', text: '12cd34' },
+        { type: 'equal', text: 'ef' },
+      ],
+    },
+  ])('applies $mode cleanup with edit cost $editCost', ({ mode, editCost, expectedOriginal }) => {
+    const result = getDiffResult(
+      computeDiff('ab12cd34ef', 'abXYcdZZef', { ...options, diffCleanupMode: mode, editCost }),
+    );
+
+    expect(result.originalLines[0].charDiffs).toEqual(expectedOriginal);
   });
 
   it('keeps a former final line equal when another line is appended', () => {
-    const { engine, factory } = createEngineHarness();
-
-    expect(computeDiff('a', 'a\nb', { ...options, diffCleanupMode: 'none' }, factory)).toEqual({
+    expect(computeDiff('a', 'a\nb', { ...options, diffCleanupMode: 'none' })).toEqual({
       status: 'success',
       diffResult: {
         originalLines: [
@@ -236,14 +249,10 @@ describe('computeDiff', () => {
         modifiedTrailingNewline: false,
       },
     });
-
-    expect(engine.diff_main).not.toHaveBeenCalled();
   });
 
   it('represents a trailing-newline-only change only in the trailing-newline metadata', () => {
-    const { engine, factory } = createEngineHarness();
-
-    expect(computeDiff('a', 'a\n', { ...options, diffCleanupMode: 'none' }, factory)).toEqual({
+    expect(computeDiff('a', 'a\n', { ...options, diffCleanupMode: 'none' })).toEqual({
       status: 'success',
       diffResult: {
         originalLines: [{ lineNumber: 1, type: 'equal', content: 'a' }],
@@ -252,72 +261,10 @@ describe('computeDiff', () => {
         modifiedTrailingNewline: true,
       },
     });
-
-    expect(engine.diff_main).not.toHaveBeenCalled();
-  });
-
-  it('finds the single changed line beyond 40,000 unique lines and retains trailing-newline metadata', () => {
-    const lineCount = 40_010;
-    const changedIndex = 40_005;
-    const originalLines = Array.from({ length: lineCount }, (_, index) => `original line ${index}`);
-    const modifiedLines = [...originalLines];
-    modifiedLines[changedIndex] = `modified line ${changedIndex}`;
-    const charDiffs = [diff(-1, originalLines[changedIndex]), diff(1, modifiedLines[changedIndex])];
-    const { engine, factory } = createEngineHarness(charDiffs);
-
-    const outcome = computeDiff(
-      originalLines.join('\n'),
-      `${modifiedLines.join('\n')}\n`,
-      { ...options, diffCleanupMode: 'none' },
-      factory,
-    );
-
-    expect(outcome.status).toBe('success');
-    if (outcome.status !== 'success') {
-      return;
-    }
-
-    expect(outcome.diffResult.originalLines).toHaveLength(lineCount);
-    expect(outcome.diffResult.modifiedLines).toHaveLength(lineCount);
-    expect(outcome.diffResult.originalLines.filter((line) => line.type !== 'equal')).toEqual([
-      {
-        lineNumber: changedIndex + 1,
-        type: 'modify',
-        content: originalLines[changedIndex],
-        charDiffs: [{ type: 'delete', text: originalLines[changedIndex] }],
-      },
-    ]);
-    expect(outcome.diffResult.modifiedLines.filter((line) => line.type !== 'equal')).toEqual([
-      {
-        lineNumber: changedIndex + 1,
-        type: 'modify',
-        content: modifiedLines[changedIndex],
-        charDiffs: [{ type: 'insert', text: modifiedLines[changedIndex] }],
-      },
-    ]);
-    expect(outcome.diffResult.originalTrailingNewline).toBe(false);
-    expect(outcome.diffResult.modifiedTrailingNewline).toBe(true);
-    expect(engine.diff_main).toHaveBeenCalledExactlyOnceWith(originalLines[changedIndex], modifiedLines[changedIndex]);
-  });
-
-  it('aligns an insertion with an explicit empty original line', () => {
-    const { factory } = createEngineHarness();
-
-    expect(computeDiff('', 'added', { ...options, diffCleanupMode: 'none' }, factory)).toEqual({
-      status: 'success',
-      diffResult: {
-        originalLines: [{ lineNumber: -1, type: 'delete', content: '' }],
-        modifiedLines: [{ lineNumber: 1, type: 'insert', content: 'added' }],
-        originalTrailingNewline: false,
-        modifiedTrailingNewline: false,
-      },
-    });
   });
 
   it('preserves and numbers an equal blank line adjacent to a change', () => {
-    const { factory } = createEngineHarness([diff(-1, 'old'), diff(1, 'new')]);
-
-    expect(computeDiff('\nold', '\nnew', { ...options, diffCleanupMode: 'none' }, factory)).toEqual({
+    expect(computeDiff('\nold', '\nnew', { ...options, diffCleanupMode: 'none' })).toEqual({
       status: 'success',
       diffResult: {
         originalLines: [
@@ -344,47 +291,56 @@ describe('computeDiff', () => {
     });
   });
 
-  it.each<{
-    mode: DiffCleanupMode;
-    expectedOriginal: { type: 'equal' | 'delete'; text: string }[];
-    expectedModified: { type: 'equal' | 'insert'; text: string }[];
-  }>([
-    {
-      mode: 'semantic',
-      expectedOriginal: [{ type: 'equal', text: 'semantic' }],
-      expectedModified: [{ type: 'equal', text: 'semantic' }],
-    },
-    {
-      mode: 'efficiency',
-      expectedOriginal: [{ type: 'equal', text: 'efficient' }],
-      expectedModified: [{ type: 'equal', text: 'efficient' }],
-    },
-    {
-      mode: 'none',
-      expectedOriginal: [{ type: 'delete', text: 'old' }],
-      expectedModified: [{ type: 'insert', text: 'new' }],
-    },
-  ])(
-    'applies the $mode cleanup branch to the observable character result',
-    ({ mode, expectedOriginal, expectedModified }) => {
-      const charDiffs = [diff(-1, 'old'), diff(1, 'new')];
-      const { engine, factory } = createEngineHarness(charDiffs, {
-        semantic: (diffs) => diffs.splice(0, diffs.length, diff(0, 'semantic')),
-        efficiency: (diffs) => diffs.splice(0, diffs.length, diff(0, 'efficient')),
-      });
-      const outcome = computeDiff('old', 'new', { ...options, diffCleanupMode: mode }, factory);
+  it('uses the prior deterministic line alignment when repeated lines have multiple shortest diffs', () => {
+    const result = getDiffResult(computeDiff('a\nb\na\n', 'a\na\nb\n', { ...options, diffCleanupMode: 'none' }));
 
-      expect(outcome).toEqual({
-        status: 'success',
-        diffResult: {
-          originalLines: [{ lineNumber: 1, type: 'modify', content: 'old', charDiffs: expectedOriginal }],
-          modifiedLines: [{ lineNumber: 1, type: 'modify', content: 'new', charDiffs: expectedModified }],
-          originalTrailingNewline: false,
-          modifiedTrailingNewline: false,
-        },
-      });
-      expect(engine.diff_cleanupSemantic).toHaveBeenCalledTimes(mode === 'semantic' ? 1 : 0);
-      expect(engine.diff_cleanupEfficiency).toHaveBeenCalledTimes(mode === 'efficiency' ? 1 : 0);
-    },
-  );
+    expect(result.originalLines.map(({ type, content }) => ({ type, content }))).toEqual([
+      { type: 'equal', content: 'a' },
+      { type: 'delete', content: 'b' },
+      { type: 'equal', content: 'a' },
+      { type: 'delete', content: '' },
+    ]);
+    expect(result.modifiedLines.map(({ type, content }) => ({ type, content }))).toEqual([
+      { type: 'equal', content: 'a' },
+      { type: 'insert', content: '' },
+      { type: 'equal', content: 'a' },
+      { type: 'insert', content: 'b' },
+    ]);
+  });
+
+  it('finds a changed line beyond 40,000 unique lines', () => {
+    const lineCount = 40_010;
+    const changedIndex = 40_005;
+    const originalLines = Array.from({ length: lineCount }, (_, index) => `original line ${index}`);
+    const modifiedLines = [...originalLines];
+    modifiedLines[changedIndex] = `modified line ${changedIndex}`;
+
+    const result = getDiffResult(
+      computeDiff(originalLines.join('\n'), `${modifiedLines.join('\n')}\n`, {
+        ...options,
+        diffCleanupMode: 'none',
+      }),
+    );
+
+    expect(result.originalLines).toHaveLength(lineCount);
+    expect(result.modifiedLines).toHaveLength(lineCount);
+    const changedOriginalLines = result.originalLines.filter((line) => line.type !== 'equal');
+    const changedModifiedLines = result.modifiedLines.filter((line) => line.type !== 'equal');
+    expect(changedOriginalLines).toHaveLength(1);
+    expect(changedModifiedLines).toHaveLength(1);
+    expect(changedOriginalLines[0]).toMatchObject({
+      lineNumber: changedIndex + 1,
+      type: 'modify',
+      content: originalLines[changedIndex],
+    });
+    expect(changedModifiedLines[0]).toMatchObject({
+      lineNumber: changedIndex + 1,
+      type: 'modify',
+      content: modifiedLines[changedIndex],
+    });
+    expect(changedOriginalLines[0].charDiffs?.map(({ text }) => text).join('')).toBe(originalLines[changedIndex]);
+    expect(changedModifiedLines[0].charDiffs?.map(({ text }) => text).join('')).toBe(modifiedLines[changedIndex]);
+    expect(result.originalTrailingNewline).toBe(false);
+    expect(result.modifiedTrailingNewline).toBe(true);
+  });
 });

@@ -35,6 +35,21 @@ test.describe('Text Mode Comparison', () => {
     await expect(page.locator('#modified')).toHaveValue(modifiedText);
   });
 
+  test('highlights complete grapheme clusters for emoji substitutions', async ({ page }) => {
+    await page.locator('#original').fill('A👍🏻B');
+    await page.locator('#modified').fill('A👍🏽B');
+    await page.locator('#compare-btn').click();
+
+    const deletedGrapheme = page.locator('.char-diff--delete');
+    const insertedGrapheme = page.locator('.char-diff--insert');
+    await expect(deletedGrapheme).toHaveText('👍🏻');
+    await expect(insertedGrapheme).toHaveText('👍🏽');
+    await expect(page.locator('.char-diff--equal')).toHaveText(['A', 'B', 'A', 'B']);
+
+    expect((await deletedGrapheme.boundingBox())?.width).toBeGreaterThan(0);
+    expect((await insertedGrapheme.boundingBox())?.width).toBeGreaterThan(0);
+  });
+
   test('keeps the former final line unchanged when a line is appended', async ({ page }) => {
     await page.locator('#original').fill('a');
     await page.locator('#modified').fill('a\nb');

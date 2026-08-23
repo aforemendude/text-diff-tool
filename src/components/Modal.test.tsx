@@ -55,21 +55,6 @@ describe('Modal', () => {
     expect(findElements(tree, (element) => element.props.className === 'modal__message')).toEqual([]);
   });
 
-  it('renders the warning title treatment', () => {
-    const tree = Modal({
-      title: 'JSON Warning',
-      message: 'Review these issues.',
-      onClose: vi.fn(),
-      variant: 'warning',
-      actionLabel: 'Continue',
-    });
-
-    expect(findElement(tree, (element) => element.type === 'h2').props.className).toBe(
-      'modal__title modal__title--warning',
-    );
-    expect(findElements(tree, (element) => element.type === 'button')[1].props.children).toBe('Continue');
-  });
-
   it('keeps a non-dismissible modal open until its dedicated action is used', () => {
     const onClose = vi.fn();
     const onAction = vi.fn();

@@ -1,14 +1,8 @@
+import { cleanupEfficiency, cleanupSemantic } from '@aforemendude/diff/cleanup';
+import { diffGraphemes } from '@aforemendude/diff/grapheme';
+import { DELETE, EQUAL, INSERT, diffLines } from '@aforemendude/diff/line';
+import { parseJson, serializeJson } from '@aforemendude/json-parse';
 import type { CharDiff, DiffCleanupMode, DiffResult, LineDiff } from '../types/diff';
-import { detectJsonIssues, stringifyWithSortedKeys, type JsonIssueCounts } from './jsonUtils';
-import { diffLines } from './lineDiffUtils';
-
-interface DiffEngine {
-  Diff_Timeout: number;
-  Diff_EditCost: number;
-  diff_main(text1: string, text2: string, checkLines?: boolean): diff_match_patch.Diff[];
-  diff_cleanupSemantic(diffs: diff_match_patch.Diff[]): void;
-  diff_cleanupEfficiency(diffs: diff_match_patch.Diff[]): void;
-}
 
 export interface ComputeDiffOptions {
   isJsonMode: boolean;
@@ -16,38 +10,14 @@ export interface ComputeDiffOptions {
   editCost: number;
 }
 
-export interface JsonWarning {
-  source: 'original' | 'modified';
-  type: 'numeric-precision' | 'duplicate-keys';
-  count: number;
-}
-
 export type ComputeDiffOutcome =
-  | { status: 'success'; diffResult: DiffResult; warnings?: JsonWarning[] }
-  | { status: 'identical'; warnings?: JsonWarning[] }
+  | { status: 'success'; diffResult: DiffResult }
+  | { status: 'identical' }
   | { status: 'error'; source: 'original' | 'modified'; message: string };
 
-export type DiffEngineFactory = () => DiffEngine;
-
-const createDiffEngine: DiffEngineFactory = () => new diff_match_patch();
-
-interface ParsedJson {
-  normalizedText: string;
-  issueCounts: JsonIssueCounts;
-}
-
-function parseJson(text: string, source: 'original' | 'modified'): ParsedJson | ComputeDiffOutcome {
+function normalizeJson(text: string, source: 'original' | 'modified'): string | ComputeDiffOutcome {
   try {
-    const parsedValue: unknown = JSON.parse(text);
-    const normalizedText = stringifyWithSortedKeys(parsedValue);
-    if (normalizedText === undefined) {
-      throw new TypeError('Parsed JSON could not be serialized.');
-    }
-
-    return {
-      normalizedText,
-      issueCounts: detectJsonIssues(text),
-    };
+    return serializeJson(parseJson(text), { sortKeys: true });
   } catch (error) {
     return {
       status: 'error',
@@ -57,100 +27,54 @@ function parseJson(text: string, source: 'original' | 'modified'): ParsedJson | 
   }
 }
 
-function collectJsonWarnings(original: JsonIssueCounts, modified: JsonIssueCounts): JsonWarning[] {
-  const warnings: JsonWarning[] = [];
-
-  if (original.numericPrecision > 0) {
-    warnings.push({ source: 'original', type: 'numeric-precision', count: original.numericPrecision });
-  }
-  if (modified.numericPrecision > 0) {
-    warnings.push({ source: 'modified', type: 'numeric-precision', count: modified.numericPrecision });
-  }
-  if (original.duplicateKeys > 0) {
-    warnings.push({ source: 'original', type: 'duplicate-keys', count: original.duplicateKeys });
-  }
-  if (modified.duplicateKeys > 0) {
-    warnings.push({ source: 'modified', type: 'duplicate-keys', count: modified.duplicateKeys });
-  }
-
-  return warnings;
-}
-
-function addWarnings<T extends { status: 'success' | 'identical' }>(outcome: T, warnings: JsonWarning[]): T {
-  return warnings.length === 0 ? outcome : { ...outcome, warnings };
-}
-
-function normalizeLineDiffInput(text: string): string {
-  // The line encoder includes a terminating newline in each token. Add one to a non-empty final line so the same
-  // logical line receives the same token whether or not another line follows it. The separately captured trailing
-  // newline flags retain the original line-ending difference for display.
-  return text === '' || text.endsWith('\n') ? text : `${text}\n`;
-}
-
 export function computeDiff(
   originalText: string,
   modifiedText: string,
   { isJsonMode, diffCleanupMode, editCost }: ComputeDiffOptions,
-  engineFactory: DiffEngineFactory = createDiffEngine,
 ): ComputeDiffOutcome {
   let textToCompareOriginal = originalText;
   let textToCompareModified = modifiedText;
-  let jsonWarnings: JsonWarning[] = [];
 
   if (isJsonMode) {
-    const parsedOriginal = parseJson(originalText, 'original');
-    if ('status' in parsedOriginal) {
-      return parsedOriginal;
+    const normalizedOriginal = normalizeJson(originalText, 'original');
+    if (typeof normalizedOriginal !== 'string') {
+      return normalizedOriginal;
     }
 
-    const parsedModified = parseJson(modifiedText, 'modified');
-    if ('status' in parsedModified) {
-      return parsedModified;
+    const normalizedModified = normalizeJson(modifiedText, 'modified');
+    if (typeof normalizedModified !== 'string') {
+      return normalizedModified;
     }
 
-    textToCompareOriginal = parsedOriginal.normalizedText;
-    textToCompareModified = parsedModified.normalizedText;
-    jsonWarnings = collectJsonWarnings(parsedOriginal.issueCounts, parsedModified.issueCounts);
+    textToCompareOriginal = normalizedOriginal;
+    textToCompareModified = normalizedModified;
   }
 
   if (textToCompareOriginal === textToCompareModified) {
-    return addWarnings({ status: 'identical' }, jsonWarnings);
+    return { status: 'identical' };
   }
 
   const originalHasTrailingNewline = textToCompareOriginal.endsWith('\n');
   const modifiedHasTrailingNewline = textToCompareModified.endsWith('\n');
-
-  const dmp = engineFactory();
-  dmp.Diff_Timeout = 0;
-  dmp.Diff_EditCost = editCost;
-
-  const lineText1 = normalizeLineDiffInput(textToCompareOriginal);
-  const lineText2 = normalizeLineDiffInput(textToCompareModified);
-
-  const lineDiffs = diffLines(lineText1, lineText2);
+  const lineDiffs = diffLines(textToCompareOriginal, textToCompareModified, { algorithm: 'myers' });
 
   const resultOriginal: LineDiff[] = [];
   const resultModified: LineDiff[] = [];
   let origLineNum = 1;
   let modLineNum = 1;
 
-  for (const diff of lineDiffs) {
-    const op = diff.operation;
-
-    if (op === DIFF_EQUAL) {
-      for (const line of diff.lines) {
-        const content = line.endsWith('\n') ? line.slice(0, -1) : line;
+  for (const [operation, lines] of lineDiffs) {
+    if (operation === EQUAL) {
+      for (const content of lines) {
         resultOriginal.push({ lineNumber: origLineNum++, type: 'equal', content });
         resultModified.push({ lineNumber: modLineNum++, type: 'equal', content });
       }
-    } else if (op === DIFF_DELETE) {
-      for (const line of diff.lines) {
-        const content = line.endsWith('\n') ? line.slice(0, -1) : line;
+    } else if (operation === DELETE) {
+      for (const content of lines) {
         resultOriginal.push({ lineNumber: origLineNum++, type: 'delete', content });
       }
-    } else if (op === DIFF_INSERT) {
-      for (const line of diff.lines) {
-        const content = line.endsWith('\n') ? line.slice(0, -1) : line;
+    } else if (operation === INSERT) {
+      for (const content of lines) {
         resultModified.push({ lineNumber: modLineNum++, type: 'insert', content });
       }
     }
@@ -179,25 +103,24 @@ export function computeDiff(
         continue;
       }
 
-      const charDiffs = dmp.diff_main(origLine.content, modLine.content);
+      let characterDiffs = diffGraphemes(origLine.content, modLine.content, { algorithm: 'myers' });
       if (diffCleanupMode === 'semantic') {
-        dmp.diff_cleanupSemantic(charDiffs);
+        characterDiffs = cleanupSemantic(characterDiffs);
       } else if (diffCleanupMode === 'efficiency') {
-        dmp.diff_cleanupEfficiency(charDiffs);
+        characterDiffs = cleanupEfficiency(characterDiffs, { editCost });
       }
 
       const origCharDiffs: CharDiff[] = [];
       const modCharDiffs: CharDiff[] = [];
 
-      for (const charDiff of charDiffs) {
-        const operation = charDiff[0];
-        const text = charDiff[1];
-        if (operation === DIFF_EQUAL) {
+      for (const [operation, tokens] of characterDiffs) {
+        const text = tokens.join('');
+        if (operation === EQUAL) {
           origCharDiffs.push({ type: 'equal', text });
           modCharDiffs.push({ type: 'equal', text });
-        } else if (operation === DIFF_DELETE) {
+        } else if (operation === DELETE) {
           origCharDiffs.push({ type: 'delete', text });
-        } else if (operation === DIFF_INSERT) {
+        } else if (operation === INSERT) {
           modCharDiffs.push({ type: 'insert', text });
         }
       }
@@ -226,16 +149,13 @@ export function computeDiff(
     }
   }
 
-  return addWarnings(
-    {
-      status: 'success',
-      diffResult: {
-        originalLines: processedOriginal,
-        modifiedLines: processedModified,
-        originalTrailingNewline: originalHasTrailingNewline,
-        modifiedTrailingNewline: modifiedHasTrailingNewline,
-      },
+  return {
+    status: 'success',
+    diffResult: {
+      originalLines: processedOriginal,
+      modifiedLines: processedModified,
+      originalTrailingNewline: originalHasTrailingNewline,
+      modifiedTrailingNewline: modifiedHasTrailingNewline,
     },
-    jsonWarnings,
-  );
+  };
 }

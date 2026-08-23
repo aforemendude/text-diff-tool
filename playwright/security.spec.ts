@@ -6,11 +6,8 @@ async function loadFramedApp(page: Page, baseURL: string | undefined, sandboxed 
   }
 
   const appUrl = new URL('/', baseURL).href;
-  const attackerUrl = new URL('/text-diff-tool/vendor_patch.js', baseURL);
-  attackerUrl.hostname = attackerUrl.hostname === 'localhost' ? '127.0.0.1' : 'localhost';
   const sandbox = sandboxed ? ' sandbox' : '';
 
-  await page.goto(attackerUrl.href);
   await page.setContent(`<iframe title="TextDiffTool"${sandbox} src="${appUrl}"></iframe>`);
 }
 

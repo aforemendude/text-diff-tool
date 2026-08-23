@@ -45,37 +45,18 @@ test.describe('JSON Mode Comparison', () => {
     await expect(compareDisplay).toContainText('"value": 200');
   });
 
-  test('warns once with counts for precision and duplicate-key issues, then continues the diff', async ({ page }) => {
+  test('preserves numeric precision and duplicate keys in the diff', async ({ page }) => {
     await page.locator('#original').fill('{"large":9007199254740993,"same":1,"same":2}');
     await page.locator('#modified').fill('{"large":9007199254740995,"same":1,"same":3}');
 
     await page.locator('#compare-btn').click();
 
-    const warningModal = page.locator('.modal');
-    await expect(warningModal.getByText('JSON Parse Warning - 4 Issues')).toBeVisible();
-    await expect(warningModal.locator('.modal__message')).toHaveText(
-      [
-        'Both texts contain valid JSON, but parsing them may change some of their contents.',
-        '',
-        'Original Text',
-        '',
-        '• 1 number may change — the parsed value may be rounded or converted to null.',
-        '• 1 duplicate key — only the last value for that key will be kept.',
-        '',
-        'Modified Text',
-        '',
-        '• 1 number may change — the parsed value may be rounded or converted to null.',
-        '• 1 duplicate key — only the last value for that key will be kept.',
-        '',
-        'Close this warning to continue the comparison with the parsed values.',
-      ].join('\n'),
-    );
-    await expect(page.locator('.compare-display')).not.toBeVisible();
-
-    await warningModal.getByRole('button', { name: 'Continue' }).click();
-
     const compareDisplay = page.locator('.compare-display');
     await expect(compareDisplay).toBeVisible();
+    await expect(page.locator('.modal')).not.toBeVisible();
+    await expect(compareDisplay).toContainText('"large": 9007199254740993');
+    await expect(compareDisplay).toContainText('"large": 9007199254740995');
+    await expect(compareDisplay).toContainText('"same": 1,');
     await expect(compareDisplay).toContainText('"same": 2');
     await expect(compareDisplay).toContainText('"same": 3');
   });
@@ -92,7 +73,6 @@ test.describe('JSON Mode Comparison', () => {
     // Should show error modal
     await expect(page.locator('.modal__title')).toContainText('JSON Parse Error');
     await expect(page.getByText('Failed to parse the modified text as JSON')).toBeVisible();
-    await expect(page.getByText(/JSON Parse Warning/)).not.toBeVisible();
   });
 
   test('preserves array element order', async ({ page }) => {
