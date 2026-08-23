@@ -2,13 +2,17 @@ import { useState } from 'react';
 import './Header.css';
 import AboutModal from './AboutModal';
 import SettingsModal from './SettingsModal';
-import type { DiffCleanupMode } from '../types/diff';
+import type { DiffAlgorithm, DiffCleanupMode, DiffMode } from '../types/diff';
 
 interface HeaderProps {
   isCompareMode: boolean;
   onToggleMode: () => void;
   isJsonMode: boolean;
   onJsonModeChange: (enabled: boolean) => void;
+  diffMode: DiffMode;
+  onDiffModeChange: (mode: DiffMode) => void;
+  diffAlgorithm: DiffAlgorithm;
+  onDiffAlgorithmChange: (algorithm: DiffAlgorithm) => void;
   diffCleanupMode: DiffCleanupMode;
   onDiffCleanupModeChange: (mode: DiffCleanupMode) => void;
   editCost: number;
@@ -20,6 +24,10 @@ function Header({
   onToggleMode,
   isJsonMode,
   onJsonModeChange,
+  diffMode,
+  onDiffModeChange,
+  diffAlgorithm,
+  onDiffAlgorithmChange,
   diffCleanupMode,
   onDiffCleanupModeChange,
   editCost,
@@ -92,6 +100,10 @@ function Header({
       {showSettings && (
         <SettingsModal
           onClose={() => setShowSettings(false)}
+          diffMode={diffMode}
+          onDiffModeChange={onDiffModeChange}
+          diffAlgorithm={diffAlgorithm}
+          onDiffAlgorithmChange={onDiffAlgorithmChange}
           diffCleanupMode={diffCleanupMode}
           onDiffCleanupModeChange={onDiffCleanupModeChange}
           editCost={editCost}

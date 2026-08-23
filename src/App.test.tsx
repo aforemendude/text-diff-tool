@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { findElement, findElements } from './test/reactElements';
-import type { DiffCleanupMode, DiffResult } from './types/diff';
+import type { DiffAlgorithm, DiffCleanupMode, DiffMode, DiffResult } from './types/diff';
 import type { ComputeDiffOutcome } from './utils/diffUtils';
 import type { DiffProcess } from './workers/diffWorkerClient';
 import App from './App';
@@ -34,6 +34,8 @@ interface AppState {
   diffResult: DiffResult | null;
   isCompareMode: boolean;
   isJsonMode: boolean;
+  diffMode: DiffMode;
+  diffAlgorithm: DiffAlgorithm;
   diffCleanupMode: DiffCleanupMode;
   editCost: number;
   modalState: {
@@ -81,7 +83,9 @@ function renderApp(overrides: Partial<AppState> = {}, existingProcessRef?: { cur
     diffResult: null,
     isCompareMode: false,
     isJsonMode: false,
-    diffCleanupMode: 'semantic',
+    diffMode: 'line-grapheme',
+    diffAlgorithm: 'myers',
+    diffCleanupMode: 'none',
     editCost: 4,
     modalState: { isOpen: false, title: '', message: '', variant: 'error' },
     isProcessing: false,
@@ -94,6 +98,8 @@ function renderApp(overrides: Partial<AppState> = {}, existingProcessRef?: { cur
     state.diffResult,
     state.isCompareMode,
     state.isJsonMode,
+    state.diffMode,
+    state.diffAlgorithm,
     state.diffCleanupMode,
     state.editCost,
     state.modalState,
@@ -131,10 +137,14 @@ describe('App', () => {
       isCompareMode: false,
       isJsonMode: true,
       onJsonModeChange: setters[4],
-      diffCleanupMode: 'semantic',
-      onDiffCleanupModeChange: setters[5],
+      diffMode: 'line-grapheme',
+      onDiffModeChange: setters[5],
+      diffAlgorithm: 'myers',
+      onDiffAlgorithmChange: setters[6],
+      diffCleanupMode: 'none',
+      onDiffCleanupModeChange: setters[7],
       editCost: 4,
-      onEditCostChange: setters[6],
+      onEditCostChange: setters[8],
     });
     expect(textAreas.props).toMatchObject({
       originalText: 'original',
@@ -155,6 +165,8 @@ describe('App', () => {
       originalText: 'before',
       modifiedText: 'after',
       isJsonMode: true,
+      diffMode: 'grapheme',
+      diffAlgorithm: 'adaptive',
       diffCleanupMode: 'efficiency',
       editCost: 8,
     });
@@ -164,20 +176,22 @@ describe('App', () => {
 
     expect(workerMocks.startDiffProcess).toHaveBeenCalledExactlyOnceWith('before', 'after', {
       isJsonMode: true,
+      diffMode: 'grapheme',
+      diffAlgorithm: 'adaptive',
       diffCleanupMode: 'efficiency',
       editCost: 8,
     });
-    expect(setters[8]).toHaveBeenCalledExactlyOnceWith(true);
+    expect(setters[10]).toHaveBeenCalledExactlyOnceWith(true);
     expect(setters[2]).not.toHaveBeenCalled();
     expect(setters[3]).not.toHaveBeenCalled();
 
     deferred.resolve({ status: 'success', diffResult });
     await deferred.process.outcome;
 
-    expect(setters[8]).toHaveBeenLastCalledWith(false);
+    expect(setters[10]).toHaveBeenLastCalledWith(false);
     expect(setters[2]).toHaveBeenCalledExactlyOnceWith(diffResult);
     expect(setters[3]).toHaveBeenCalledExactlyOnceWith(true);
-    expect(setters[7]).not.toHaveBeenCalled();
+    expect(setters[9]).not.toHaveBeenCalled();
   });
 
   it('opens the exact informational modal and stays in edit mode for identical content', async () => {
@@ -189,7 +203,7 @@ describe('App', () => {
     deferred.resolve({ status: 'identical' });
     await deferred.process.outcome;
 
-    expect(setters[7]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: 'Identical Content',
       message: 'The original and modified content are exactly the same. There are no differences to display.',
@@ -211,7 +225,7 @@ describe('App', () => {
     deferred.resolve({ status: 'error', source, message: 'invalid JSON' });
     await deferred.process.outcome;
 
-    expect(setters[7]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: `JSON Parse Error - ${sourceLabel} Text`,
       message: `Failed to parse the ${source} text as JSON:\n\ninvalid JSON`,
@@ -236,7 +250,7 @@ describe('App', () => {
 
     expect(deferred.process.terminate).toHaveBeenCalledOnce();
     expect(processRef.current).toBeNull();
-    expect(setters[8]).toHaveBeenCalledExactlyOnceWith(false);
+    expect(setters[10]).toHaveBeenCalledExactlyOnceWith(false);
     expect(setters[2]).not.toHaveBeenCalled();
     expect(setters[3]).not.toHaveBeenCalled();
   });
@@ -288,8 +302,8 @@ describe('App', () => {
     deferred.reject(new Error('worker crashed'));
     await deferred.process.outcome.catch(() => undefined);
 
-    expect(setters[8]).toHaveBeenLastCalledWith(false);
-    expect(setters[7]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[10]).toHaveBeenLastCalledWith(false);
+    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: 'Diff Processing Error',
       message: 'Failed to compare the texts:\n\nworker crashed',
@@ -329,7 +343,7 @@ describe('App', () => {
 
     expect(modal.props).toMatchObject({ title: 'Notice', message: 'Details', variant: 'info' });
     (modal.props.onClose as () => void)();
-    expect(setters[7]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
       isOpen: false,
       title: '',
       message: '',

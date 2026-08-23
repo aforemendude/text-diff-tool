@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { Header, TextAreas, CompareDisplay, Modal, ProcessingModal } from './components';
-import type { DiffCleanupMode, DiffResult } from './types/diff';
+import type { DiffAlgorithm, DiffCleanupMode, DiffMode, DiffResult } from './types/diff';
 import type { ComputeDiffOutcome } from './utils/diffUtils';
 import { initializeDiffWorker, startDiffProcess, type DiffProcess } from './workers/diffWorkerClient';
 
@@ -25,7 +25,9 @@ function App() {
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [isJsonMode, setIsJsonMode] = useState(false);
-  const [diffCleanupMode, setDiffCleanupMode] = useState<DiffCleanupMode>('semantic');
+  const [diffMode, setDiffMode] = useState<DiffMode>('line-grapheme');
+  const [diffAlgorithm, setDiffAlgorithm] = useState<DiffAlgorithm>('myers');
+  const [diffCleanupMode, setDiffCleanupMode] = useState<DiffCleanupMode>('none');
   const [editCost, setEditCost] = useState(4);
   const [modalState, setModalState] = useState<ModalState>(closedModalState);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -93,7 +95,13 @@ function App() {
     let diffProcess: DiffProcess;
 
     try {
-      diffProcess = startDiffProcess(originalText, modifiedText, { isJsonMode, diffCleanupMode, editCost });
+      diffProcess = startDiffProcess(originalText, modifiedText, {
+        isJsonMode,
+        diffMode,
+        diffAlgorithm,
+        diffCleanupMode,
+        editCost,
+      });
     } catch (error) {
       showProcessingError(error);
       return;
@@ -138,6 +146,10 @@ function App() {
         onToggleMode={handleToggleMode}
         isJsonMode={isJsonMode}
         onJsonModeChange={setIsJsonMode}
+        diffMode={diffMode}
+        onDiffModeChange={setDiffMode}
+        diffAlgorithm={diffAlgorithm}
+        onDiffAlgorithmChange={setDiffAlgorithm}
         diffCleanupMode={diffCleanupMode}
         onDiffCleanupModeChange={setDiffCleanupMode}
         editCost={editCost}

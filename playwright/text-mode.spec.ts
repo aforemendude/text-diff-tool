@@ -22,8 +22,8 @@ test.describe('Text Mode Comparison', () => {
 
     const originalLine = compareDisplay.locator('.diff-line--delete').filter({ hasText: 'Hello World' });
     const modifiedLine = compareDisplay.locator('.diff-line--insert').filter({ hasText: 'Hello There' });
-    await expect(originalLine.locator('.char-diff--delete', { hasText: 'World' })).toBeVisible();
-    await expect(modifiedLine.locator('.char-diff--insert', { hasText: 'There' })).toBeVisible();
+    await expect(originalLine.locator('.char-diff--delete')).toHaveText(['Wo', 'ld']);
+    await expect(modifiedLine.locator('.char-diff--insert')).toHaveText(['The', 'e']);
     await expect(compareDisplay.locator('.diff-line--insert', { hasText: 'Line 4' })).toBeVisible();
 
     const editButton = page.locator('#compare-btn');

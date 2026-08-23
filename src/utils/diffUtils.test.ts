@@ -4,6 +4,8 @@ import { computeDiff, type ComputeDiffOutcome } from './diffUtils';
 
 const options = {
   isJsonMode: false,
+  diffMode: 'line-grapheme' as const,
+  diffAlgorithm: 'myers' as const,
   diffCleanupMode: 'semantic' as const,
   editCost: 4,
 };
@@ -251,17 +253,20 @@ describe('computeDiff', () => {
     });
   });
 
-  it('represents a trailing-newline-only change only in the trailing-newline metadata', () => {
-    expect(computeDiff('a', 'a\n', { ...options, diffCleanupMode: 'none' })).toEqual({
-      status: 'success',
-      diffResult: {
-        originalLines: [{ lineNumber: 1, type: 'equal', content: 'a' }],
-        modifiedLines: [{ lineNumber: 1, type: 'equal', content: 'a' }],
-        originalTrailingNewline: false,
-        modifiedTrailingNewline: true,
-      },
-    });
-  });
+  it.each(['line-grapheme', 'grapheme'] as const)(
+    'represents a trailing-newline-only change only in the trailing-newline metadata in %s mode',
+    (diffMode) => {
+      expect(computeDiff('a', 'a\n', { ...options, diffMode, diffCleanupMode: 'none' })).toEqual({
+        status: 'success',
+        diffResult: {
+          originalLines: [{ lineNumber: 1, type: 'equal', content: 'a' }],
+          modifiedLines: [{ lineNumber: 1, type: 'equal', content: 'a' }],
+          originalTrailingNewline: false,
+          modifiedTrailingNewline: true,
+        },
+      });
+    },
+  );
 
   it('preserves and numbers an equal blank line adjacent to a change', () => {
     expect(computeDiff('\nold', '\nnew', { ...options, diffCleanupMode: 'none' })).toEqual({
@@ -289,6 +294,100 @@ describe('computeDiff', () => {
         modifiedTrailingNewline: false,
       },
     });
+  });
+
+  it('diffs the entire content by grapheme while preserving numbered display lines', () => {
+    const original = 'The quick brown fox\njumps over the lazy dog';
+    const modified = 'The quick brown\nfox jumps over the lazy dog';
+    const lineResult = getDiffResult(
+      computeDiff(original, modified, { ...options, diffCleanupMode: 'none', diffMode: 'line-grapheme' }),
+    );
+    const graphemeResult = getDiffResult(
+      computeDiff(original, modified, { ...options, diffCleanupMode: 'none', diffMode: 'grapheme' }),
+    );
+
+    expect(lineResult.originalLines[0].charDiffs).toContainEqual({ type: 'delete', text: ' fox' });
+    expect(graphemeResult.originalLines.map(({ lineNumber }) => lineNumber)).toEqual([1, 2]);
+    expect(graphemeResult.modifiedLines.map(({ lineNumber }) => lineNumber)).toEqual([1, 2]);
+    expect(graphemeResult.originalLines[0].charDiffs).toEqual([
+      { type: 'equal', text: 'The quick brown' },
+      { type: 'delete', text: ' ' },
+      { type: 'equal', text: 'fox' },
+    ]);
+    expect(graphemeResult.modifiedLines[0].charDiffs).toEqual([{ type: 'equal', text: 'The quick brown' }]);
+    expect(graphemeResult.originalLines[1].charDiffs).toEqual([{ type: 'equal', text: 'jumps over the lazy dog' }]);
+    expect(graphemeResult.modifiedLines[1].charDiffs).toEqual([
+      { type: 'equal', text: 'fox' },
+      { type: 'insert', text: ' ' },
+      { type: 'equal', text: 'jumps over the lazy dog' },
+    ]);
+  });
+
+  it.each(['myers', 'adaptive'] as const)('supports the selectable %s algorithm in both diff modes', (algorithm) => {
+    for (const diffMode of ['line-grapheme', 'grapheme'] as const) {
+      const result = getDiffResult(
+        computeDiff('before\nshared', 'after\nshared', {
+          ...options,
+          diffMode,
+          diffAlgorithm: algorithm,
+          diffCleanupMode: 'none',
+        }),
+      );
+
+      expect(result.originalLines.map(({ lineNumber }) => lineNumber)).toEqual([1, 2]);
+      expect(result.modifiedLines.map(({ lineNumber }) => lineNumber)).toEqual([1, 2]);
+    }
+  });
+
+  it('aligns whole-content grapheme rows around shared text when a final line is removed', () => {
+    const result = getDiffResult(
+      computeDiff('shared\nremoved', 'shared', {
+        ...options,
+        diffMode: 'grapheme',
+        diffCleanupMode: 'none',
+      }),
+    );
+
+    expect(result.originalLines.map(({ lineNumber, type, content }) => ({ lineNumber, type, content }))).toEqual([
+      { lineNumber: 1, type: 'equal', content: 'shared' },
+      { lineNumber: 2, type: 'delete', content: 'removed' },
+    ]);
+    expect(result.modifiedLines.map(({ lineNumber, type, content }) => ({ lineNumber, type, content }))).toEqual([
+      { lineNumber: 1, type: 'equal', content: 'shared' },
+      { lineNumber: -1, type: 'insert', content: '' },
+    ]);
+  });
+
+  it.each([
+    ['', 'added'],
+    ['removed', ''],
+    ['one\ntwo', 'zero\none\ntwo\nthree'],
+    ['one\n\nthree\n', 'one\ntwo\nthree'],
+    ['a\r\nb', 'a\r\nc'],
+  ])('keeps every source line and line number in grapheme mode for %j versus %j', (original, modified) => {
+    const result = getDiffResult(
+      computeDiff(original, modified, {
+        ...options,
+        diffMode: 'grapheme',
+        diffCleanupMode: 'none',
+      }),
+    );
+    const expectedLines = (text: string) => {
+      if (text.length === 0) return [];
+      const withoutTrailingNewline = text.endsWith('\n') ? text.slice(0, -1) : text;
+      return withoutTrailingNewline.split(/\r?\n/);
+    };
+
+    expect(
+      result.originalLines
+        .filter(({ lineNumber }) => lineNumber > 0)
+        .map(({ lineNumber, content }) => ({ lineNumber, content })),
+    ).toEqual(expectedLines(original).map((content, index) => ({ lineNumber: index + 1, content })));
+    expect(
+      result.modifiedLines
+        .filter(({ lineNumber }) => lineNumber > 0)
+        .map(({ lineNumber, content }) => ({ lineNumber, content })),
+    ).toEqual(expectedLines(modified).map((content, index) => ({ lineNumber: index + 1, content })));
   });
 
   it('uses the prior deterministic line alignment when repeated lines have multiple shortest diffs', () => {

@@ -1,4 +1,6 @@
-export type DiffCleanupMode = 'semantic' | 'efficiency' | 'none';
+export type DiffMode = 'line-grapheme' | 'grapheme';
+export type DiffAlgorithm = 'myers' | 'adaptive';
+export type DiffCleanupMode = 'none' | 'semantic' | 'efficiency';
 
 export interface DiffResult {
   originalLines: LineDiff[];

@@ -25,7 +25,11 @@ function defaultProps() {
     onToggleMode: vi.fn(),
     isJsonMode: false,
     onJsonModeChange: vi.fn(),
-    diffCleanupMode: 'semantic' as const,
+    diffMode: 'line-grapheme' as const,
+    onDiffModeChange: vi.fn(),
+    diffAlgorithm: 'myers' as const,
+    onDiffAlgorithmChange: vi.fn(),
+    diffCleanupMode: 'none' as const,
     onDiffCleanupModeChange: vi.fn(),
     editCost: 4,
     onEditCostChange: vi.fn(),
@@ -81,7 +85,11 @@ describe('Header', () => {
     const settings = findElement(tree, (element) => element.type === SettingsModal);
 
     expect(settings.props).toMatchObject({
-      diffCleanupMode: 'semantic',
+      diffMode: 'line-grapheme',
+      onDiffModeChange: props.onDiffModeChange,
+      diffAlgorithm: 'myers',
+      onDiffAlgorithmChange: props.onDiffAlgorithmChange,
+      diffCleanupMode: 'none',
       onDiffCleanupModeChange: props.onDiffCleanupModeChange,
       editCost: 4,
       onEditCostChange: props.onEditCostChange,

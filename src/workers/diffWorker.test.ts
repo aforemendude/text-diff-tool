@@ -56,6 +56,8 @@ describe('diffWorker', () => {
   it('computes a requested diff and posts the successful outcome', () => {
     const options: ComputeDiffOptions = {
       isJsonMode: false,
+      diffMode: 'line-grapheme',
+      diffAlgorithm: 'myers',
       diffCleanupMode: 'semantic',
       editCost: 4,
     };
@@ -82,7 +84,13 @@ describe('diffWorker', () => {
       type: 'compute-diff',
       originalText: 'before',
       modifiedText: 'after',
-      options: { isJsonMode: true, diffCleanupMode: 'none', editCost: 2 },
+      options: {
+        isJsonMode: true,
+        diffMode: 'grapheme',
+        diffAlgorithm: 'adaptive',
+        diffCleanupMode: 'none',
+        editCost: 2,
+      },
     });
 
     expect(postMessage).toHaveBeenCalledExactlyOnceWith({
@@ -100,7 +108,13 @@ describe('diffWorker', () => {
       type: 'compute-diff',
       originalText: 'before',
       modifiedText: 'after',
-      options: { isJsonMode: true, diffCleanupMode: 'none', editCost: 2 },
+      options: {
+        isJsonMode: true,
+        diffMode: 'grapheme',
+        diffAlgorithm: 'adaptive',
+        diffCleanupMode: 'none',
+        editCost: 2,
+      },
     });
 
     expect(postMessage).toHaveBeenCalledExactlyOnceWith({

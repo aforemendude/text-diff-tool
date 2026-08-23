@@ -1,49 +1,123 @@
 import React from 'react';
-import type { DiffCleanupMode } from '../types/diff';
+import type { DiffAlgorithm, DiffCleanupMode, DiffMode } from '../types/diff';
 import Modal from './Modal';
 import './SettingsModal.css';
 
 interface SettingsModalProps {
   onClose: () => void;
+  diffMode: DiffMode;
+  onDiffModeChange: (mode: DiffMode) => void;
+  diffAlgorithm: DiffAlgorithm;
+  onDiffAlgorithmChange: (algorithm: DiffAlgorithm) => void;
   diffCleanupMode: DiffCleanupMode;
   onDiffCleanupModeChange: (mode: DiffCleanupMode) => void;
   editCost: number;
   onEditCostChange: (cost: number) => void;
 }
 
-const cleanupModes: {
-  value: DiffCleanupMode;
+interface SettingOption<Value extends string> {
+  value: Value;
   label: string;
   description: string;
-}[] = [
+  isDefault?: boolean;
+}
+
+const diffModes: SettingOption<DiffMode>[] = [
+  {
+    value: 'line-grapheme',
+    label: 'Line then grapheme',
+    description: 'Align lines first, then compare graphemes inside each changed line.',
+    isDefault: true,
+  },
+  {
+    value: 'grapheme',
+    label: 'Just grapheme',
+    description: 'Compare the entire content at once while keeping line numbers visible.',
+  },
+];
+
+const algorithms: SettingOption<DiffAlgorithm>[] = [
+  {
+    value: 'myers',
+    label: 'Myers',
+    description: 'A predictable shortest-edit diff for general use.',
+    isDefault: true,
+  },
+  {
+    value: 'adaptive',
+    label: 'Adaptive',
+    description: 'Automatically chooses the best exact strategy for the input.',
+  },
+];
+
+const cleanupModes: SettingOption<DiffCleanupMode>[] = [
+  {
+    value: 'none',
+    label: 'No Cleanup',
+    description: 'Keep the algorithm’s raw result without post-processing.',
+    isDefault: true,
+  },
   {
     value: 'semantic',
     label: 'Semantic Cleanup',
-    description: 'Optimizes diffs for human readability by merging short edits and aligning to word boundaries.',
+    description: 'Shift and merge edits into boundaries that are easier to read.',
   },
   {
     value: 'efficiency',
     label: 'Efficiency Cleanup',
-    description: 'Reduces the number of edit operations while preserving correctness. Good for minimal patches.',
-  },
-  {
-    value: 'none',
-    label: 'No Cleanup',
-    description: 'Raw diff output without any post-processing. Shows the exact character-level differences.',
+    description: 'Merge small equalities to produce fewer, larger edits.',
   },
 ];
 
+function renderOption<Value extends string>(
+  option: SettingOption<Value>,
+  groupName: string,
+  selectedValue: Value,
+  onChange: (value: Value) => void,
+) {
+  const isSelected = selectedValue === option.value;
+
+  return (
+    <label
+      key={option.value}
+      className={isSelected ? 'settings-modal__option settings-modal__option--selected' : 'settings-modal__option'}
+    >
+      <input
+        type="radio"
+        name={groupName}
+        value={option.value}
+        checked={isSelected}
+        onChange={() => onChange(option.value)}
+      />
+      <span className="settings-modal__option-content">
+        <span className="settings-modal__option-heading">
+          <span className="settings-modal__option-label">{option.label}</span>
+          {option.isDefault && <span className="settings-modal__default-badge">Default</span>}
+        </span>
+        <span className="settings-modal__option-description">{option.description}</span>
+      </span>
+      <span className="settings-modal__option-indicator" aria-hidden="true">
+        <span className="settings-modal__option-indicator-dot" />
+      </span>
+    </label>
+  );
+}
+
 function SettingsModal({
   onClose,
+  diffMode,
+  onDiffModeChange,
+  diffAlgorithm,
+  onDiffAlgorithmChange,
   diffCleanupMode,
   onDiffCleanupModeChange,
   editCost,
   onEditCostChange,
 }: SettingsModalProps) {
-  const handleEditCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    if (!isNaN(val) && val >= 0) {
-      onEditCostChange(val);
+  const handleEditCostChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number.parseFloat(event.target.value);
+    if (Number.isFinite(value) && value >= 0) {
+      onEditCostChange(value);
     } else {
       onEditCostChange(editCost);
     }
@@ -51,76 +125,63 @@ function SettingsModal({
 
   return (
     <Modal
-      title="Settings"
+      title="Diff settings"
       onClose={onClose}
       variant="info"
       className="settings-modal"
       bodyClassName="settings-modal__body"
       actionLabel="Done"
     >
-      <div className="settings-modal__section">
-        <h3 className="settings-modal__section-title">Diff Cleanup Mode</h3>
-        <p className="settings-modal__section-description">Choose how the diff algorithm processes the results.</p>
-        <div className="settings-modal__options">
-          {cleanupModes.map((mode) => (
-            <label
-              key={mode.value}
-              className={
-                diffCleanupMode === mode.value
-                  ? 'settings-modal__option settings-modal__option--selected'
-                  : 'settings-modal__option'
-              }
-            >
-              <input
-                type="radio"
-                name="diffCleanupMode"
-                value={mode.value}
-                checked={diffCleanupMode === mode.value}
-                onChange={() => onDiffCleanupModeChange(mode.value)}
-              />
-              <div className="settings-modal__option-content">
-                <span className="settings-modal__option-label">{mode.label}</span>
-                <span className="settings-modal__option-description">{mode.description}</span>
-              </div>
-              <span className="settings-modal__option-check">
-                {diffCleanupMode === mode.value && (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
-              </span>
-            </label>
-          ))}
+      <p className="settings-modal__intro">Choose how the next comparison is calculated.</p>
+
+      <fieldset className="settings-modal__section">
+        <legend className="settings-modal__section-title">Diff mode</legend>
+        <p className="settings-modal__section-description">Set the level used to find matching content.</p>
+        <div className="settings-modal__options settings-modal__options--two-column">
+          {diffModes.map((mode) => renderOption(mode, 'diffMode', diffMode, onDiffModeChange))}
         </div>
-      </div>
-      <div className="settings-modal__section">
-        <h3 className="settings-modal__section-title">Edit Cost</h3>
-        <p className="settings-modal__section-description">
-          The cost of an edit operation in terms of characters. Higher values lead to fewer, larger edits. Applies to
-          Efficiency Cleanup.
-        </p>
-        <div className="settings-modal__input-group">
+      </fieldset>
+
+      <fieldset className="settings-modal__section">
+        <legend className="settings-modal__section-title">Algorithm</legend>
+        <p className="settings-modal__section-description">Choose the exact diff strategy.</p>
+        <div className="settings-modal__options settings-modal__options--two-column">
+          {algorithms.map((algorithm) =>
+            renderOption(algorithm, 'diffAlgorithm', diffAlgorithm, onDiffAlgorithmChange),
+          )}
+        </div>
+      </fieldset>
+
+      <fieldset className="settings-modal__section">
+        <legend className="settings-modal__section-title">Cleanup</legend>
+        <p className="settings-modal__section-description">Optionally refine the raw grapheme changes.</p>
+        <div className="settings-modal__options settings-modal__options--cleanup">
+          {cleanupModes.map((mode) => renderOption(mode, 'diffCleanupMode', diffCleanupMode, onDiffCleanupModeChange))}
+        </div>
+
+        <label
+          className={
+            diffCleanupMode === 'efficiency'
+              ? 'settings-modal__edit-cost'
+              : 'settings-modal__edit-cost settings-modal__edit-cost--disabled'
+          }
+        >
+          <span className="settings-modal__edit-cost-copy">
+            <span className="settings-modal__edit-cost-label">Edit cost</span>
+            <span className="settings-modal__edit-cost-description">Merge equalities shorter than this cost.</span>
+          </span>
           <input
             type="number"
             id="edit-cost"
             className="settings-modal__input"
             min="0"
+            step="any"
             value={editCost}
             onChange={handleEditCostChange}
             disabled={diffCleanupMode !== 'efficiency'}
           />
-        </div>
-      </div>
+        </label>
+      </fieldset>
     </Modal>
   );
 }

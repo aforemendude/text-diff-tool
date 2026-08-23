@@ -5,6 +5,8 @@ import { DiffProcessTerminatedError, DiffWorkerClient } from './diffWorkerClient
 
 const options: ComputeDiffOptions = {
   isJsonMode: true,
+  diffMode: 'grapheme',
+  diffAlgorithm: 'adaptive',
   diffCleanupMode: 'efficiency',
   editCost: 7,
 };

@@ -1,125 +1,239 @@
 .settings-modal {
-  --modal-max-width: 520px;
+  --modal-max-width: 680px;
+  max-height: calc(100vh - 2rem);
 }
 
 .settings-modal__body {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+}
+
+.settings-modal__intro {
+  margin: -0.125rem 0 0.125rem;
+  color: var(--text-secondary);
+  font-size: 0.825rem;
 }
 
 .settings-modal__section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.875rem;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: #fbfcfe;
 }
 
 .settings-modal__section-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-main);
+  float: left;
+  width: 100%;
   margin: 0;
+  padding: 0;
+  color: var(--text-main);
+  font-size: 0.825rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .settings-modal__section-description {
-  font-size: 0.8rem;
+  clear: both;
+  margin: 0.2rem 0 0;
   color: var(--text-secondary);
-  margin: 0;
-  line-height: 1.5;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .settings-modal__options {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 0.5rem;
-  margin-top: 0.25rem;
+  margin-top: 0.65rem;
+}
+
+.settings-modal__options--two-column {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-modal__options--cleanup {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .settings-modal__option {
+  position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
-  background: #f8f9fa;
-  border: 2px solid transparent;
-  border-radius: var(--radius-sm);
+  min-width: 0;
+  gap: 0.625rem;
+  padding: 0.7rem 0.75rem;
+  overflow: hidden;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
   cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
 }
 
 .settings-modal__option:hover {
-  background: #f1f3f5;
+  border-color: var(--border-medium);
+  background: #f8faff;
 }
 
-.settings-modal__option--selected {
-  background: var(--primary-subtle);
-  border-color: var(--primary);
+.settings-modal__option:focus-within {
+  box-shadow: 0 0 0 3px var(--primary-subtle);
 }
 
+.settings-modal__option--selected,
 .settings-modal__option--selected:hover {
+  border-color: var(--primary);
   background: var(--primary-subtle);
+  box-shadow: inset 0 0 0 1px var(--primary);
 }
 
 .settings-modal__option input[type='radio'] {
   position: absolute;
+  width: 1px;
+  height: 1px;
   opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
 }
 
 .settings-modal__option-content {
-  flex: 1;
   display: flex;
+  flex: 1;
+  min-width: 0;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.225rem;
+}
+
+.settings-modal__option-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .settings-modal__option-label {
-  font-size: 0.875rem;
-  font-weight: 600;
   color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.settings-modal__default-badge {
+  padding: 0.08rem 0.35rem;
+  border-radius: 99px;
+  background: hsl(var(--hue-primary), 85%, 91%);
+  color: var(--primary-hover);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  line-height: 1.35;
+  text-transform: uppercase;
 }
 
 .settings-modal__option-description {
-  font-size: 0.75rem;
   color: var(--text-secondary);
-  line-height: 1.4;
+  font-size: 0.69rem;
+  line-height: 1.35;
 }
 
-.settings-modal__option-check {
+.settings-modal__option-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  color: var(--primary);
-  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 0.05rem;
+  border: 1.5px solid var(--border-medium);
+  border-radius: 50%;
+  background: var(--bg-surface);
+  flex: 0 0 auto;
 }
 
-.settings-modal__input-group {
-  margin-top: 0.25rem;
+.settings-modal__option--selected .settings-modal__option-indicator {
+  border-color: var(--primary);
+}
+
+.settings-modal__option-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.settings-modal__option--selected .settings-modal__option-indicator-dot {
+  background: var(--primary);
+}
+
+.settings-modal__edit-cost {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.625rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px dashed var(--border-medium);
+  border-radius: 8px;
+  background: var(--bg-surface);
+}
+
+.settings-modal__edit-cost--disabled {
+  background: #f6f7f9;
+}
+
+.settings-modal__edit-cost-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.settings-modal__edit-cost-label {
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.settings-modal__edit-cost-description {
+  color: var(--text-secondary);
+  font-size: 0.675rem;
+  line-height: 1.3;
 }
 
 .settings-modal__input {
-  width: 100%;
-  max-width: 200px;
-  padding: 0.625rem 0.875rem;
-  font-size: 0.875rem;
+  width: 76px;
+  flex: 0 0 auto;
+  padding: 0.4rem 0.5rem;
   border: 1px solid var(--border-medium);
-  border-radius: var(--radius-sm);
-  background-color: #f8f9fa;
-  color: var(--text-main);
+  border-radius: 6px;
   outline: none;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .settings-modal__input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background-color: #f3f4f6;
   border-color: var(--border-light);
+  background: #eef0f3;
+  color: var(--text-muted);
+  cursor: not-allowed;
 }
 
 .settings-modal__input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-subtle);
+}
+
+@media (max-width: 640px) {
+  .settings-modal__options--two-column,
+  .settings-modal__options--cleanup {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-modal__section {
+    padding: 0.75rem;
+  }
 }
