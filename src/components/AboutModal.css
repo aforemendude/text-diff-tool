@@ -67,11 +67,10 @@
   position: relative;
 }
 
-.about-modal__features li::before {
-  content: '✓';
+.about-modal__check {
   position: absolute;
   left: 0;
-  color: #10b981;
+  color: #047857;
   font-weight: 600;
 }
 

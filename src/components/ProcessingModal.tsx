@@ -16,10 +16,13 @@ function ProcessingModal({ onTerminate }: ProcessingModalProps) {
       dismissible={false}
       className="processing-modal"
       bodyClassName="processing-modal__body"
+      ariaDescribedBy="processing-modal-description"
     >
       <div className="processing-modal__status">
         <span className="processing-modal__spinner" aria-hidden="true" />
-        <p>The comparison is still running. You can terminate it and return to editing.</p>
+        <p id="processing-modal-description">
+          The comparison is still running. You can terminate it and return to editing.
+        </p>
       </div>
     </Modal>
   );

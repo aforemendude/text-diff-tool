@@ -155,6 +155,9 @@ function App() {
         editCost={editCost}
         onEditCostChange={setEditCost}
       />
+      <p className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+        {isProcessing ? 'Comparison in progress.' : isCompareMode ? 'Comparison complete. Results are ready.' : ''}
+      </p>
       {!isCompareMode && (
         <TextAreas
           originalText={originalText}

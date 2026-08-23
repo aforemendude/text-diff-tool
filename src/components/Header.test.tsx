@@ -49,11 +49,15 @@ describe('Header', () => {
     const settings = findElement(tree, (element) => element.props.id === 'settings-btn');
     const about = findElement(tree, (element) => element.props['aria-label'] === 'About');
     const checkbox = findElement(tree, (element) => element.type === 'input' && element.props.type === 'checkbox');
+    const logo = findElement(tree, (element) => element.props.className === 'header__logo-image');
+    const aboutIcon = findElement(tree, (element) => element.type === 'svg');
 
-    expect(compare.props).toMatchObject({ className: 'btn btn-primary', children: 'Compare' });
-    expect(settings.props).toMatchObject({ className: 'btn btn-secondary', disabled: false });
-    expect(about.props.className).toBe('header__about-button');
+    expect(compare.props).toMatchObject({ type: 'button', className: 'btn btn-primary', children: 'Compare' });
+    expect(settings.props).toMatchObject({ type: 'button', className: 'btn btn-secondary', disabled: false });
+    expect(about.props).toMatchObject({ type: 'button', className: 'header__about-button' });
     expect(checkbox.props).toMatchObject({ checked: true, disabled: false });
+    expect(logo.props).toMatchObject({ alt: '', src: '/text-diff-tool/logo.svg' });
+    expect(aboutIcon.props).toMatchObject({ 'aria-hidden': 'true', focusable: 'false' });
 
     (compare.props.onClick as () => void)();
     (settings.props.onClick as () => void)();

@@ -47,7 +47,7 @@ describe('CompareDisplay', () => {
 
   it('renders the exact empty-state contract for a null result', () => {
     expect(renderToStaticMarkup(<CompareDisplay diffResult={null} />)).toBe(
-      '<div class="compare-display compare-display--empty"><p class="compare-display__placeholder">Enter text in both fields and click <strong>Compare</strong> to see differences</p></div>',
+      '<main class="compare-display compare-display--empty" aria-label="Comparison results"><p class="compare-display__placeholder">Enter text in both fields and click <strong>Compare</strong> to see differences</p></main>',
     );
   });
 
@@ -77,7 +77,7 @@ describe('CompareDisplay', () => {
       'diff-line',
       'diff-line',
     ]);
-    expect([...markup.matchAll(/class="diff-line__number">([^<]*)/g)].map((match) => match[1])).toEqual([
+    expect([...markup.matchAll(/class="diff-line__number"[^>]*>([^<]*)/g)].map((match) => match[1])).toEqual([
       '1',
       '',
       '',
@@ -85,7 +85,7 @@ describe('CompareDisplay', () => {
       '2',
       '2',
     ]);
-    expect([...markup.matchAll(/class="diff-line__gutter">([^<]*)/g)].map((match) => match[1])).toEqual([
+    expect([...markup.matchAll(/class="diff-line__gutter"[^>]*>([^<]*)/g)].map((match) => match[1])).toEqual([
       '−',
       '',
       '',
@@ -95,15 +95,18 @@ describe('CompareDisplay', () => {
     ]);
     expect([...markup.matchAll(/class="diff-line__text">([^<]*)/g)].map((match) => match[1])).toEqual([
       'removed',
-      '\u00A0',
-      '\u00A0',
+      '',
+      '',
       'added',
       'shared',
       'shared',
     ]);
+    expect(markup.match(/class="visually-hidden">No corresponding line\.<\/span>/g)).toHaveLength(2);
+    expect(markup.match(/class="diff-line__number" aria-hidden="true"/g)).toHaveLength(6);
+    expect(markup.match(/class="diff-line__gutter" aria-hidden="true"/g)).toHaveLength(6);
   });
 
-  it('renders paired modifications with exact character-diff classes on each side', () => {
+  it('renders paired modifications with semantic character-level insertion and deletion annotations', () => {
     const markup = renderToStaticMarkup(
       <CompareDisplay
         diffResult={result(
@@ -140,12 +143,37 @@ describe('CompareDisplay', () => {
       'char-diff char-diff--equal char-diff--delete-marker',
       'char-diff char-diff--insert',
     ]);
-    expect([...markup.matchAll(/class="char-diff[^"]*">([^<]*)/g)].map((match) => match[1])).toEqual([
-      'o',
-      'ld',
-      'o',
-      'ther',
-    ]);
+    expect(markup).toContain(
+      '<del class="char-diff char-diff--delete" aria-describedby="char-diff-original-1-1">ld</del>',
+    );
+    expect(markup).toContain(
+      '<ins class="char-diff char-diff--insert" aria-describedby="char-diff-modified-1-1">ther</ins>',
+    );
+    expect(markup).toContain('<span id="char-diff-original-1-1">Deleted text</span>');
+    expect(markup).toContain('<span id="char-diff-modified-1-1">Inserted text</span>');
+    expect(markup.match(/class="visually-hidden">Changed line\. <\/span>/g)).toHaveLength(2);
+  });
+
+  it('exposes the comparison as a labelled table with column headers, rows, and cells', () => {
+    const markup = renderToStaticMarkup(
+      <CompareDisplay
+        diffResult={result(
+          [{ lineNumber: 1, type: 'delete', content: 'before' }],
+          [{ lineNumber: 1, type: 'insert', content: 'after' }],
+        )}
+      />,
+    );
+
+    expect(markup).toContain('<main class="compare-display" aria-label="Comparison results">');
+    expect(markup).toContain(
+      '<div class="compare-display__table" role="table" aria-label="Original and modified text comparison">',
+    );
+    expect(markup).toContain('<div class="compare-display__header" role="row">');
+    expect(markup).toContain('role="columnheader" aria-colindex="1"><h2>Original</h2>');
+    expect(markup).toContain('role="columnheader" aria-colindex="2"><h2>Modified</h2>');
+    expect(markup).toContain('<div class="compare-display__content" role="rowgroup" tabindex="0">');
+    expect(markup.match(/class="compare-display__row" role="row"/g)).toHaveLength(1);
+    expect(markup.match(/role="cell" aria-colindex="[12]"/g)).toHaveLength(2);
   });
 
   it.each([
@@ -153,12 +181,24 @@ describe('CompareDisplay', () => {
     [8, '8 unchanged lines hidden'],
   ])('collapses %i unchanged lines with the exact singular/plural label', (lineCount, label) => {
     const lines = equalLines(lineCount);
-    const markup = renderToStaticMarkup(<CompareDisplay diffResult={result(lines, lines)} />);
+    const diffResult = result(lines, lines);
+    const tree = CompareDisplay({ diffResult });
+    const markup = renderToStaticMarkup(<CompareDisplay diffResult={diffResult} />);
+    const button = findElement(tree, (element) => element.type === 'button');
+    const icon = findElement(tree, (element) => element.props.className === 'compare-display__collapsed-icon');
+    const controlledContent = findElement(tree, (element) => element.props.id === `unchanged-lines-0-${lineCount - 1}`);
 
     expect(classes(markup, 'compare-display__collapsed')).toEqual(['compare-display__collapsed']);
     expect([...markup.matchAll(/class="compare-display__collapsed-text">([^<]*)/g)].map((match) => match[1])).toEqual([
       label,
     ]);
+    expect(button.props).toMatchObject({
+      type: 'button',
+      'aria-expanded': false,
+      'aria-controls': `unchanged-lines-0-${lineCount - 1}`,
+    });
+    expect(icon.props['aria-hidden']).toBe('true');
+    expect(controlledContent.props).toMatchObject({ role: 'presentation', hidden: true });
   });
 
   it('renders exactly three context lines around a middle change and collapses both remainders', () => {
@@ -174,7 +214,7 @@ describe('CompareDisplay', () => {
       '2 unchanged lines hidden',
     ]);
     expect(classes(markup, 'compare-display__row')).toHaveLength(7);
-    expect([...markup.matchAll(/class="diff-line__number">([^<]*)/g)].map((match) => match[1])).toEqual([
+    expect([...markup.matchAll(/class="diff-line__number"[^>]*>([^<]*)/g)].map((match) => match[1])).toEqual([
       '3',
       '3',
       '4',
@@ -215,6 +255,13 @@ describe('CompareDisplay', () => {
     const collapsedTree = CompareDisplay({ diffResult });
     const collapsed = findElement(collapsedTree, (element) => element.props.className === 'compare-display__collapsed');
 
+    expect(collapsed.type).toBe('button');
+    expect(collapsed.props).toMatchObject({
+      type: 'button',
+      'aria-expanded': false,
+      'aria-controls': 'unchanged-lines-0-7',
+    });
+
     (collapsed.props.onClick as () => void)();
     const addUpdater = addSection.mock.calls[0][0] as (previous: Set<string>) => Set<string>;
     const empty = new Set<string>();
@@ -234,6 +281,16 @@ describe('CompareDisplay', () => {
     expect(
       [...expandedMarkup.matchAll(/class="compare-display__collapsed-text">([^<]*)/g)].map((match) => match[1]),
     ).toEqual(['Collapse 8 unchanged lines']);
+    expect(expanded.type).toBe('button');
+    expect(expanded.props).toMatchObject({
+      type: 'button',
+      'aria-expanded': true,
+      'aria-controls': 'unchanged-lines-0-7',
+    });
+    expect(findElement(expandedTree, (element) => element.props.id === 'unchanged-lines-0-7').props).toMatchObject({
+      role: 'presentation',
+      hidden: false,
+    });
     expect(classes(expandedMarkup, 'compare-display__row')).toHaveLength(8);
     expect([...expandedMarkup.matchAll(/class="diff-line__text">([^<]*)/g)].map((match) => match[1])).toEqual([
       'line 1',
@@ -291,7 +348,7 @@ describe('CompareDisplay', () => {
     expect([...markup.matchAll(/class="compare-display__collapsed-text">([^<]*)/g)].map((match) => match[1])).toEqual([
       '2 unchanged lines hidden',
     ]);
-    expect([...markup.matchAll(/class="diff-line__number">([^<]*)/g)].map((match) => match[1])).toEqual([
+    expect([...markup.matchAll(/class="diff-line__number"[^>]*>([^<]*)/g)].map((match) => match[1])).toEqual([
       '3',
       '3',
       '4',

@@ -41,7 +41,7 @@ function Header({
       <header className="header">
         <div className="header__brand">
           <div className="header__logo">
-            <img className="header__logo-image" src="/text-diff-tool/logo.svg" alt="TextDiffTool Logo" />
+            <img className="header__logo-image" src="/text-diff-tool/logo.svg" alt="" />
           </div>
           <h1 className="header__title">
             <span className="header__brand-text">Text</span>
@@ -50,7 +50,7 @@ function Header({
           </h1>
         </div>
         <div className="header__controls">
-          <button id="compare-btn" className="btn btn-primary" onClick={onToggleMode}>
+          <button type="button" id="compare-btn" className="btn btn-primary" onClick={onToggleMode}>
             {isCompareMode ? 'Edit' : 'Compare'}
           </button>
           <label className="header__toggle">
@@ -66,6 +66,7 @@ function Header({
             <span className="header__toggle-label">JSON Mode</span>
           </label>
           <button
+            type="button"
             id="settings-btn"
             className="btn btn-secondary"
             onClick={() => setShowSettings(true)}
@@ -77,8 +78,10 @@ function Header({
           </button>
         </div>
         <div className="header__actions">
-          <button className="header__about-button" onClick={() => setShowAbout(true)} aria-label="About">
+          <button type="button" className="header__about-button" onClick={() => setShowAbout(true)} aria-label="About">
             <svg
+              aria-hidden="true"
+              focusable="false"
               xmlns="http://www.w3.org/2000/svg"
               width="20"
               height="20"

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 test.describe('Diff processing', () => {
   test('loads one dedicated worker with the page and reuses it for consecutive comparisons', async ({ page }) => {
@@ -69,14 +70,28 @@ test.describe('Diff processing', () => {
     await page.locator('#compare-btn').click();
 
     const dialog = page.getByRole('dialog', { name: 'Comparing Text' });
+    const terminate = dialog.getByRole('button', { name: 'Terminate' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Close' })).toHaveCount(0);
+    await expect(terminate).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(terminate).toBeFocused();
+
+    const accessibilityResults = await new AxeBuilder({ page }).analyze();
+    expect(
+      accessibilityResults.violations.map((violation) => ({
+        id: violation.id,
+        impact: violation.impact,
+        targets: violation.nodes.map((node) => node.target),
+      })),
+    ).toEqual([]);
 
     await page.locator('.modal__overlay').click({ position: { x: 5, y: 5 } });
     await page.keyboard.press('Escape');
     await expect(dialog).toBeVisible();
 
-    await dialog.getByRole('button', { name: 'Terminate' }).click();
+    await terminate.click();
 
     await expect(dialog).toBeHidden();
     await expect(page.locator('#original')).toHaveValue('before');

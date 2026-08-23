@@ -12,13 +12,19 @@ describe('TextAreas', () => {
     });
 
     expect(tree.props.className).toBe('text-areas');
-    expect(findElements(tree, (element) => element.type === 'h2').map((element) => element.props.children)).toEqual([
-      'Original',
-      'Modified',
+    expect(
+      findElements(tree, (element) => element.type === 'h2').map((element) => ({
+        id: element.props.id,
+        children: element.props.children,
+      })),
+    ).toEqual([
+      { id: 'original-heading', children: 'Original' },
+      { id: 'modified-heading', children: 'Modified' },
     ]);
     expect(
       findElements(tree, (element) => element.type === 'textarea').map((element) => ({
         id: element.props.id,
+        'aria-labelledby': element.props['aria-labelledby'],
         className: element.props.className,
         placeholder: element.props.placeholder,
         value: element.props.value,
@@ -26,12 +32,14 @@ describe('TextAreas', () => {
     ).toEqual([
       {
         id: 'original',
+        'aria-labelledby': 'original-heading',
         className: 'text-areas__textarea',
         placeholder: 'Paste the original version of the text here...',
         value: 'original value',
       },
       {
         id: 'modified',
+        'aria-labelledby': 'modified-heading',
         className: 'text-areas__textarea',
         placeholder: 'Paste the modified version of the text here...',
         value: 'modified value',

@@ -131,20 +131,27 @@ function SettingsModal({
       className="settings-modal"
       bodyClassName="settings-modal__body"
       actionLabel="Done"
+      ariaDescribedBy="settings-modal-intro"
     >
-      <p className="settings-modal__intro">Choose how the next comparison is calculated.</p>
+      <p id="settings-modal-intro" className="settings-modal__intro">
+        Choose how the next comparison is calculated.
+      </p>
 
-      <fieldset className="settings-modal__section">
+      <fieldset className="settings-modal__section" aria-describedby="diff-mode-description">
         <legend className="settings-modal__section-title">Diff mode</legend>
-        <p className="settings-modal__section-description">Set the level used to find matching content.</p>
+        <p id="diff-mode-description" className="settings-modal__section-description">
+          Set the level used to find matching content.
+        </p>
         <div className="settings-modal__options settings-modal__options--two-column">
           {diffModes.map((mode) => renderOption(mode, 'diffMode', diffMode, onDiffModeChange))}
         </div>
       </fieldset>
 
-      <fieldset className="settings-modal__section">
+      <fieldset className="settings-modal__section" aria-describedby="algorithm-description">
         <legend className="settings-modal__section-title">Algorithm</legend>
-        <p className="settings-modal__section-description">Choose the exact diff strategy.</p>
+        <p id="algorithm-description" className="settings-modal__section-description">
+          Choose the exact diff strategy.
+        </p>
         <div className="settings-modal__options settings-modal__options--two-column">
           {algorithms.map((algorithm) =>
             renderOption(algorithm, 'diffAlgorithm', diffAlgorithm, onDiffAlgorithmChange),
@@ -152,14 +159,16 @@ function SettingsModal({
         </div>
       </fieldset>
 
-      <fieldset className="settings-modal__section">
+      <fieldset className="settings-modal__section" aria-describedby="cleanup-description">
         <legend className="settings-modal__section-title">Cleanup</legend>
-        <p className="settings-modal__section-description">Optionally refine the raw grapheme changes.</p>
+        <p id="cleanup-description" className="settings-modal__section-description">
+          Optionally refine the raw grapheme changes.
+        </p>
         <div className="settings-modal__options settings-modal__options--cleanup">
           {cleanupModes.map((mode) => renderOption(mode, 'diffCleanupMode', diffCleanupMode, onDiffCleanupModeChange))}
         </div>
 
-        <label
+        <div
           className={
             diffCleanupMode === 'efficiency'
               ? 'settings-modal__edit-cost'
@@ -167,8 +176,12 @@ function SettingsModal({
           }
         >
           <span className="settings-modal__edit-cost-copy">
-            <span className="settings-modal__edit-cost-label">Edit cost</span>
-            <span className="settings-modal__edit-cost-description">Merge equalities shorter than this cost.</span>
+            <label htmlFor="edit-cost" className="settings-modal__edit-cost-label">
+              Edit cost
+            </label>
+            <span id="edit-cost-description" className="settings-modal__edit-cost-description">
+              Merge equalities shorter than this cost.
+            </span>
           </span>
           <input
             type="number"
@@ -178,9 +191,10 @@ function SettingsModal({
             step="any"
             value={editCost}
             onChange={handleEditCostChange}
+            aria-describedby="edit-cost-description"
             disabled={diffCleanupMode !== 'efficiency'}
           />
-        </label>
+        </div>
       </fieldset>
     </Modal>
   );

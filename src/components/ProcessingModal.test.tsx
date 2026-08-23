@@ -18,15 +18,17 @@ describe('ProcessingModal', () => {
       dismissible: false,
       className: 'processing-modal',
       bodyClassName: 'processing-modal__body',
+      ariaDescribedBy: 'processing-modal-description',
     });
     expect(findElement(tree, (element) => element.props.className === 'processing-modal__spinner').props).toMatchObject(
       {
         'aria-hidden': 'true',
       },
     );
-    expect(findElement(tree, (element) => element.type === 'p').props.children).toBe(
-      'The comparison is still running. You can terminate it and return to editing.',
-    );
+    expect(findElement(tree, (element) => element.type === 'p').props).toMatchObject({
+      id: 'processing-modal-description',
+      children: 'The comparison is still running. You can terminate it and return to editing.',
+    });
 
     (tree.props.onAction as () => void)();
 

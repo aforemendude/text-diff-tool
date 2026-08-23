@@ -81,8 +81,9 @@
   background: #f8faff;
 }
 
-.settings-modal__option:focus-within {
-  box-shadow: 0 0 0 3px var(--primary-subtle);
+.settings-modal__option:has(input:focus-visible) {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .settings-modal__option--selected,
@@ -96,7 +97,11 @@
   position: absolute;
   width: 1px;
   height: 1px;
-  opacity: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .settings-modal__option-content {
@@ -134,7 +139,7 @@
 }
 
 .settings-modal__option-description {
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 0.69rem;
   line-height: 1.35;
 }
@@ -208,7 +213,6 @@
   padding: 0.4rem 0.5rem;
   border: 1px solid var(--border-medium);
   border-radius: 6px;
-  outline: none;
   background: var(--bg-surface);
   color: var(--text-main);
   font-size: 0.8rem;
@@ -222,9 +226,8 @@
   cursor: not-allowed;
 }
 
-.settings-modal__input:focus {
+.settings-modal__input:focus-visible {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-subtle);
 }
 
 @media (max-width: 640px) {
@@ -235,5 +238,23 @@
 
   .settings-modal__section {
     padding: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-modal__option {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .settings-modal__option-indicator {
+    border: 2px solid ButtonText;
+    background: Canvas;
+  }
+
+  .settings-modal__option--selected .settings-modal__option-indicator-dot {
+    forced-color-adjust: none;
+    background: Highlight;
   }
 }
