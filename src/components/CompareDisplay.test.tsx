@@ -41,7 +41,13 @@ function configureExpandedSections(expandedSections = new Set<string>()) {
 
 function classes(markup: string, baseClass: string): string[] {
   const expression = new RegExp(`class="(${baseClass}(?: [^"]+)?)"`, 'g');
-  return [...markup.matchAll(expression)].map((match) => match[1]);
+  return [...markup.matchAll(expression)].map((match) => {
+    const className = match[1];
+    if (className === undefined) {
+      throw new Error(`Missing class match for ${baseClass}`);
+    }
+    return className;
+  });
 }
 
 function cssDeclarations(selector: string): string {
@@ -343,7 +349,7 @@ describe('CompareDisplay', () => {
     });
 
     (collapsed.props.onClick as () => void)();
-    const addUpdater = addSection.mock.calls[0][0] as (previous: Set<string>) => Set<string>;
+    const addUpdater = addSection.mock.calls[0]?.[0] as (previous: Set<string>) => Set<string>;
     const empty = new Set<string>();
     expect(addUpdater(empty)).toEqual(new Set(['0-7']));
     expect(empty).toEqual(new Set());
@@ -391,7 +397,7 @@ describe('CompareDisplay', () => {
       'line 8',
     ]);
     (expanded.props.onClick as () => void)();
-    const removeUpdater = removeSection.mock.calls[0][0] as (previous: Set<string>) => Set<string>;
+    const removeUpdater = removeSection.mock.calls[0]?.[0] as (previous: Set<string>) => Set<string>;
     const current = new Set(['0-7']);
     expect(removeUpdater(current)).toEqual(new Set());
     expect(current).toEqual(new Set(['0-7']));

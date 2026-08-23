@@ -14,11 +14,12 @@ function colorChannels(color: string): [number, number, number] {
 
 function contrastRatio(foreground: string, background: string): number {
   const luminance = (color: string) => {
-    const [red, green, blue] = colorChannels(color).map((channel) => {
+    const linearize = (channel: number) => {
       const value = channel / 255;
       return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-    });
-    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    };
+    const [red, green, blue] = colorChannels(color);
+    return 0.2126 * linearize(red) + 0.7152 * linearize(green) + 0.0722 * linearize(blue);
   };
 
   const foregroundLuminance = luminance(foreground);

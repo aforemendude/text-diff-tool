@@ -52,14 +52,18 @@ describe('TextAreas', () => {
     const onModifiedChange = vi.fn();
     const tree = TextAreas({ originalText: '', modifiedText: '', onOriginalChange, onModifiedChange });
     const textareas = findElements(tree, (element) => element.type === 'textarea');
+    const [originalTextarea, modifiedTextarea] = textareas;
+    if (originalTextarea === undefined || modifiedTextarea === undefined) {
+      throw new Error('Expected both text areas');
+    }
 
-    (textareas[0].props.onChange as (event: { target: { value: string } }) => void)({
+    (originalTextarea.props.onChange as (event: { target: { value: string } }) => void)({
       target: { value: 'new original' },
     });
     expect(onOriginalChange).toHaveBeenCalledExactlyOnceWith('new original');
     expect(onModifiedChange).not.toHaveBeenCalled();
 
-    (textareas[1].props.onChange as (event: { target: { value: string } }) => void)({
+    (modifiedTextarea.props.onChange as (event: { target: { value: string } }) => void)({
       target: { value: 'new modified' },
     });
     expect(onModifiedChange).toHaveBeenCalledExactlyOnceWith('new modified');

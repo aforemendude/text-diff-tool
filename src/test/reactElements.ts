@@ -1,6 +1,30 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 
-type ElementProps = Record<string, unknown> & { children?: ReactNode };
+type KnownElementProp =
+  | 'autoFocus'
+  | 'checked'
+  | 'children'
+  | 'className'
+  | 'disabled'
+  | 'htmlFor'
+  | 'id'
+  | 'name'
+  | 'onAction'
+  | 'onCancel'
+  | 'onChange'
+  | 'onClick'
+  | 'onClose'
+  | 'onKeyDown'
+  | 'onTerminate'
+  | 'onToggleMode'
+  | 'placeholder'
+  | 'role'
+  | 'type'
+  | 'value';
+
+type ElementProps = Record<string, unknown> & { [Key in KnownElementProp]?: unknown } & {
+  children?: ReactNode;
+};
 
 export type TestElement = ReactElement<ElementProps>;
 
@@ -25,8 +49,9 @@ export function findElements(node: ReactNode, predicate: (element: TestElement) 
 
 export function findElement(node: ReactNode, predicate: (element: TestElement) => boolean): TestElement {
   const matches = findElements(node, predicate);
-  if (matches.length !== 1) {
+  const match = matches[0];
+  if (matches.length !== 1 || match === undefined) {
     throw new Error(`Expected exactly one matching React element, received ${matches.length}`);
   }
-  return matches[0];
+  return match;
 }

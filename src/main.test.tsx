@@ -37,7 +37,7 @@ describe('main', () => {
     expect(rootMocks.createRoot).toHaveBeenCalledExactlyOnceWith(appRoot);
     expect(rootMocks.render).toHaveBeenCalledOnce();
 
-    const strictMode = rootMocks.render.mock.calls[0][0];
+    const strictMode = rootMocks.render.mock.calls[0]?.[0];
     expect(isValidElement(strictMode)).toBe(true);
     if (!isValidElement<{ children: React.ReactElement }>(strictMode)) {
       throw new Error('Expected StrictMode to receive a React element');

@@ -21,8 +21,32 @@ interface WorkerHarness {
   worker: Worker;
 }
 
+class WorkerHarnessCollection {
+  private readonly items: WorkerHarness[] = [];
+
+  get 0(): WorkerHarness {
+    return this.get(0);
+  }
+
+  get 1(): WorkerHarness {
+    return this.get(1);
+  }
+
+  push(worker: WorkerHarness): void {
+    this.items.push(worker);
+  }
+
+  private get(index: number): WorkerHarness {
+    const worker = this.items[index];
+    if (worker === undefined) {
+      throw new Error(`Missing worker harness at index ${index}`);
+    }
+    return worker;
+  }
+}
+
 function createWorkerFactoryHarness() {
-  const workers: WorkerHarness[] = [];
+  const workers = new WorkerHarnessCollection();
   const factory = vi.fn(() => {
     const postMessage = vi.fn();
     const terminate = vi.fn();

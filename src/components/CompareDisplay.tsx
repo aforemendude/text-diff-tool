@@ -1,4 +1,4 @@
-import { useState, ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import type { CharDiff as CharDiffValue, DiffResult, LineDiff } from '../diff/types';
 import './CompareDisplay.css';
 
@@ -21,6 +21,14 @@ type DisplaySection =
       endIndex: number;
       lineCount: number;
     };
+
+function getLine(lines: LineDiff[], index: number): LineDiff {
+  const line = lines[index];
+  if (line === undefined) {
+    throw new Error(`Missing aligned diff line at index ${index}`);
+  }
+  return line;
+}
 
 function CompareDisplay({ diffResult, showTextDecorations = true }: CompareDisplayProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -138,8 +146,8 @@ function CompareDisplay({ diffResult, showTextDecorations = true }: CompareDispl
                 for (let idx = section.startIndex; idx <= section.endIndex; idx++) {
                   lines.push(
                     <div key={idx} className="compare-display__row" role="row">
-                      <DiffLine line={originalLines[idx]} side="original" />
-                      <DiffLine line={modifiedLines[idx]} side="modified" />
+                      <DiffLine line={getLine(originalLines, idx)} side="original" />
+                      <DiffLine line={getLine(modifiedLines, idx)} side="modified" />
                     </div>,
                   );
                 }
@@ -186,8 +194,8 @@ function CompareDisplay({ diffResult, showTextDecorations = true }: CompareDispl
             for (let idx = section.startIndex; idx <= section.endIndex; idx++) {
               lines.push(
                 <div key={idx} className="compare-display__row" role="row">
-                  <DiffLine line={originalLines[idx]} side="original" />
-                  <DiffLine line={modifiedLines[idx]} side="modified" />
+                  <DiffLine line={getLine(originalLines, idx)} side="original" />
+                  <DiffLine line={getLine(modifiedLines, idx)} side="modified" />
                 </div>,
               );
             }

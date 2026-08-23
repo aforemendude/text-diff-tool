@@ -33,6 +33,14 @@ type GraphemeLinePair = readonly [original: GraphemeLine | undefined, modified: 
 
 const MAX_ALIGNMENT_CELLS = 1_000_000;
 
+function getRequiredItem<T>(items: ArrayLike<T>, index: number): T {
+  const item = items[index];
+  if (item === undefined) {
+    throw new Error(`Missing item at index ${index}`);
+  }
+  return item;
+}
+
 function isLineBreak(token: string): boolean {
   return token === '\n' || token === '\r\n';
 }
@@ -221,13 +229,13 @@ function alignGraphemeHunk(originalLines: GraphemeLine[], modifiedLines: Graphem
     currentScores[0] = 0;
 
     for (let column = 1; column < columnCount; column++) {
-      const originalLine = originalLines[row - 1];
-      const modifiedLine = modifiedLines[column - 1];
+      const originalLine = getRequiredItem(originalLines, row - 1);
+      const modifiedLine = getRequiredItem(modifiedLines, column - 1);
       const sharedMatchWeight = originalLine.matchWeights.get(modifiedLine.id) ?? 0;
       const exactContentBonus = originalLine.content === modifiedLine.content ? 2 : 0;
-      const diagonalScore = previousScores[column - 1] + 1 + sharedMatchWeight * 4 + exactContentBonus;
-      const upScore = previousScores[column];
-      const leftScore = currentScores[column - 1];
+      const diagonalScore = getRequiredItem(previousScores, column - 1) + 1 + sharedMatchWeight * 4 + exactContentBonus;
+      const upScore = getRequiredItem(previousScores, column);
+      const leftScore = getRequiredItem(currentScores, column - 1);
       const directionIndex = row * columnCount + column;
 
       if (diagonalScore >= upScore && diagonalScore >= leftScore) {

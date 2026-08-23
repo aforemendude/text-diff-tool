@@ -43,12 +43,16 @@ describe('Modal', () => {
     const title = findElement(tree, (element) => element.type === 'h2');
     const message = findElement(tree, (element) => element.props.className === 'modal__message');
     const buttons = findElements(tree, (element) => element.type === 'button');
+    const [closeButton, actionButton] = buttons;
+    if (closeButton === undefined || actionButton === undefined) {
+      throw new Error('Expected close and action buttons');
+    }
 
     expect(title.props).toMatchObject({ id: 'modal-title', className: 'modal__title', children: 'Failure' });
     expect(message.props).toMatchObject({ id: 'modal-message', children: 'Something failed' });
     expect(buttons.map((button) => button.props.children)).toEqual(['×', 'OK']);
     expect(buttons.map((button) => button.props.type)).toEqual(['button', 'button']);
-    expect(buttons[0].props.autoFocus).toBe(true);
+    expect(closeButton.props.autoFocus).toBe(true);
     expect(reactMocks.useEffect).toHaveBeenCalledWith(expect.any(Function), []);
 
     const backdrop = {};
@@ -63,9 +67,9 @@ describe('Modal', () => {
     expect(preventDefault).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalledTimes(2);
 
-    (buttons[0].props.onClick as () => void)();
+    (closeButton.props.onClick as () => void)();
     expect(onClose).toHaveBeenCalledTimes(3);
-    (buttons[1].props.onClick as () => void)();
+    (actionButton.props.onClick as () => void)();
     expect(onClose).toHaveBeenCalledTimes(4);
 
     const stopPropagation = vi.fn();
@@ -104,7 +108,9 @@ describe('Modal', () => {
     expect(
       findElement(tree, (element) => element.props.className === 'modal__body special-modal__body').props.children,
     ).toBe(child);
-    expect(findElements(tree, (element) => element.type === 'button')[1].props.children).toBe('Done');
+    expect(
+      findElement(tree, (element) => element.type === 'button' && element.props.children === 'Done').props.children,
+    ).toBe('Done');
     expect(findElements(tree, (element) => element.props.className === 'modal__message')).toEqual([]);
   });
 
@@ -206,6 +212,10 @@ describe('Modal', () => {
     });
 
     const buttons = findElements(tree, (element) => element.type === 'button');
+    const [actionButton] = buttons;
+    if (actionButton === undefined) {
+      throw new Error('Expected an action button');
+    }
 
     expect(tree.type).toBe('dialog');
     expect(tree.props).toMatchObject({
@@ -213,7 +223,7 @@ describe('Modal', () => {
       'aria-describedby': 'modal-message',
     });
     expect(buttons).toHaveLength(1);
-    expect(buttons[0].props).toMatchObject({
+    expect(actionButton.props).toMatchObject({
       type: 'button',
       className: 'btn btn-primary',
       children: 'Terminate',
@@ -229,7 +239,7 @@ describe('Modal', () => {
     });
     const preventDefault = vi.fn();
     (tree.props.onCancel as (event: { preventDefault: () => void }) => void)({ preventDefault });
-    (buttons[0].props.onClick as () => void)();
+    (actionButton.props.onClick as () => void)();
 
     expect(preventDefault).toHaveBeenCalledOnce();
     expect(onAction).toHaveBeenCalledOnce();

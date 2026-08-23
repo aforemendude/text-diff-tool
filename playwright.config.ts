@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import { cpus } from 'node:os';
 
 const previewBaseURL = 'http://localhost:4173';
-const configuredBaseURL = process.env.BASE_URL;
+const configuredBaseURL = process.env['BASE_URL'];
 const baseURL = configuredBaseURL || previewBaseURL;
 const cpuCoreCount = cpus().length;
 

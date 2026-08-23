@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeDiff, type ComputeDiffOutcome } from './compute';
-import type { DiffCleanupMode, DiffResult } from './types';
+import type { DiffCleanupMode, DiffResult, LineDiff } from './types';
 
 const options = {
   isJsonMode: false,
@@ -16,6 +16,14 @@ function getDiffResult(outcome: ComputeDiffOutcome): DiffResult {
     throw new Error(`Expected a successful diff, received ${outcome.status}.`);
   }
   return outcome.diffResult;
+}
+
+function getLine(lines: readonly LineDiff[], index: number): LineDiff {
+  const line = lines[index];
+  if (line === undefined) {
+    throw new Error(`Missing diff line at index ${index}`);
+  }
+  return line;
 }
 
 describe('computeDiff', () => {
@@ -40,8 +48,8 @@ describe('computeDiff', () => {
 
     expect(result.originalLines.map(({ content }) => content)).toEqual(['{', '  "id": 9007199254740992', '}']);
     expect(result.modifiedLines.map(({ content }) => content)).toEqual(['{', '  "id": 9007199254740993', '}']);
-    expect(result.originalLines[1].type).toBe('modify');
-    expect(result.modifiedLines[1].type).toBe('modify');
+    expect(getLine(result.originalLines, 1).type).toBe('modify');
+    expect(getLine(result.modifiedLines, 1).type).toBe('modify');
   });
 
   it('preserves duplicate JSON members and their relative order', () => {
@@ -226,12 +234,12 @@ describe('computeDiff', () => {
       }),
     );
 
-    expect(result.originalLines[0].charDiffs).toEqual([
+    expect(getLine(result.originalLines, 0).charDiffs).toEqual([
       { type: 'equal', text: 'A' },
       { type: 'delete', text: originalGrapheme },
       { type: 'equal', text: 'B' },
     ]);
-    expect(result.modifiedLines[0].charDiffs).toEqual([
+    expect(getLine(result.modifiedLines, 0).charDiffs).toEqual([
       { type: 'equal', text: 'A' },
       { type: 'insert', text: modifiedGrapheme },
       { type: 'equal', text: 'B' },
@@ -313,8 +321,8 @@ describe('computeDiff', () => {
       computeDiff('ab12cd34ef', 'abXYcdZZef', { ...options, diffCleanupMode: mode, editCost }),
     );
 
-    expect(result.originalLines[0].charDiffs).toEqual(expectedOriginal);
-    expect(result.modifiedLines[0].charDiffs).toEqual(expectedModified);
+    expect(getLine(result.originalLines, 0).charDiffs).toEqual(expectedOriginal);
+    expect(getLine(result.modifiedLines, 0).charDiffs).toEqual(expectedModified);
   });
 
   it('keeps a former final line equal when another line is appended', () => {
@@ -400,17 +408,19 @@ describe('computeDiff', () => {
       computeDiff(original, modified, { ...options, diffCleanupMode: 'none', diffMode: 'grapheme' }),
     );
 
-    expect(lineResult.originalLines[0].charDiffs).toContainEqual({ type: 'delete', text: ' fox' });
+    expect(getLine(lineResult.originalLines, 0).charDiffs).toContainEqual({ type: 'delete', text: ' fox' });
     expect(graphemeResult.originalLines.map(({ lineNumber }) => lineNumber)).toEqual([1, 2]);
     expect(graphemeResult.modifiedLines.map(({ lineNumber }) => lineNumber)).toEqual([1, 2]);
-    expect(graphemeResult.originalLines[0].charDiffs).toEqual([
+    expect(getLine(graphemeResult.originalLines, 0).charDiffs).toEqual([
       { type: 'equal', text: 'The quick brown' },
       { type: 'delete', text: ' ' },
       { type: 'equal', text: 'fox' },
     ]);
-    expect(graphemeResult.modifiedLines[0].charDiffs).toEqual([{ type: 'equal', text: 'The quick brown' }]);
-    expect(graphemeResult.originalLines[1].charDiffs).toEqual([{ type: 'equal', text: 'jumps over the lazy dog' }]);
-    expect(graphemeResult.modifiedLines[1].charDiffs).toEqual([
+    expect(getLine(graphemeResult.modifiedLines, 0).charDiffs).toEqual([{ type: 'equal', text: 'The quick brown' }]);
+    expect(getLine(graphemeResult.originalLines, 1).charDiffs).toEqual([
+      { type: 'equal', text: 'jumps over the lazy dog' },
+    ]);
+    expect(getLine(graphemeResult.modifiedLines, 1).charDiffs).toEqual([
       { type: 'equal', text: 'fox' },
       { type: 'insert', text: ' ' },
       { type: 'equal', text: 'jumps over the lazy dog' },
@@ -436,8 +446,16 @@ describe('computeDiff', () => {
         { lineNumber: 1, type: 'modify', content: 'after' },
         { lineNumber: 2, type: 'equal', content: 'shared' },
       ]);
-      expect(result.originalLines[0].charDiffs?.map(({ text }) => text).join('')).toBe('before');
-      expect(result.modifiedLines[0].charDiffs?.map(({ text }) => text).join('')).toBe('after');
+      expect(
+        getLine(result.originalLines, 0)
+          .charDiffs?.map(({ text }) => text)
+          .join(''),
+      ).toBe('before');
+      expect(
+        getLine(result.modifiedLines, 0)
+          .charDiffs?.map(({ text }) => text)
+          .join(''),
+      ).toBe('after');
     }
   });
 
@@ -570,8 +588,16 @@ describe('computeDiff', () => {
       type: 'modify',
       content: modifiedLines[changedIndex],
     });
-    expect(changedOriginalLines[0].charDiffs?.map(({ text }) => text).join('')).toBe(originalLines[changedIndex]);
-    expect(changedModifiedLines[0].charDiffs?.map(({ text }) => text).join('')).toBe(modifiedLines[changedIndex]);
+    expect(
+      getLine(changedOriginalLines, 0)
+        .charDiffs?.map(({ text }) => text)
+        .join(''),
+    ).toBe(originalLines[changedIndex]);
+    expect(
+      getLine(changedModifiedLines, 0)
+        .charDiffs?.map(({ text }) => text)
+        .join(''),
+    ).toBe(modifiedLines[changedIndex]);
     expect(result.originalTrailingNewline).toBe(false);
     expect(result.modifiedTrailingNewline).toBe(true);
   });

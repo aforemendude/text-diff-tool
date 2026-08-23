@@ -19,10 +19,12 @@ export class DiffProcessTerminatedError extends Error {
 const createDiffWorker: DiffWorkerFactory = () => new InlineDiffWorker();
 
 export class DiffWorkerClient {
+  private readonly workerFactory: DiffWorkerFactory;
   private worker: Worker | null;
   private isProcessing = false;
 
-  constructor(private readonly workerFactory: DiffWorkerFactory = createDiffWorker) {
+  constructor(workerFactory: DiffWorkerFactory = createDiffWorker) {
+    this.workerFactory = workerFactory;
     this.worker = this.createWorker();
   }
 
