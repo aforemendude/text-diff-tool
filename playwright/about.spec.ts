@@ -15,7 +15,6 @@ test('About modal can be opened and closed', async ({ page }) => {
 
   // Check for some content
   await expect(page.getByText('A modern, browser-based tool for comparing text')).toBeVisible();
-  await expect(page.getByText('Typography: Inter and JetBrains Mono')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Inter license' })).toHaveAttribute(
     'href',
     '/text-diff-tool/fonts/inter/OFL.txt',

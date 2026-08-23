@@ -87,12 +87,6 @@
   text-decoration: none;
 }
 
-.about-modal__credits .about-modal__font-credit {
-  margin-top: 0.5rem;
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-}
-
 .about-modal__font-license-links {
   display: flex;
   justify-content: center;

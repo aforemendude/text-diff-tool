@@ -47,7 +47,6 @@ function AboutModal({ onClose }: AboutModalProps) {
             View on GitHub
           </a>
         </p>
-        <p className="about-modal__font-credit">Typography: Inter and JetBrains Mono</p>
         <p className="about-modal__font-license-links">
           <a href={`${fontLicenseBaseUrl}/inter/OFL.txt`} target="_blank" rel="noopener noreferrer">
             Inter license
