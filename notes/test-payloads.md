@@ -3,6 +3,17 @@
 Paste each **Original** and **Modified** payload into the matching pane, then select **Compare**. Keep JSON mode off
 unless a case says otherwise. The fenced blocks use `text` intentionally so formatters leave the payloads alone.
 
+## Delayed comparison
+
+Leave JSON mode off and keep the default **Line then grapheme**, **Myers**, and **No cleanup** settings. Paste the
+complete contents of [slow-diff-original.txt](./slow-diff-original.txt) into **Original** and
+[slow-diff-modified.txt](./slow-diff-modified.txt) into **Modified**, then select **Compare**.
+
+The files are intentionally adversarial single-line payloads: each contains 12,500 graphemes and the pair has no
+graphemes in common. The default diff took about 2.3 seconds on the reference development machine; timing will vary with
+the browser and hardware. Expect the processing dialog to remain visible during the comparison and the final result to
+show one fully modified line.
+
 ## JSON normalization and safety
 
 Turn on **JSON Mode**. This pair covers formatting and key-order normalization, nested arrays and objects, duplicate
