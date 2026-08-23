@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AboutModal from './AboutModal';
 import SettingsModal from './SettingsModal';
+import { APPLICATION_BASE_URL } from '../config';
 import type { DiffAlgorithm, DiffCleanupMode, DiffMode } from '../diff/types';
 import './Header.css';
 
@@ -41,7 +42,7 @@ function Header({
       <header className="header">
         <div className="header__brand">
           <div className="header__logo">
-            <img className="header__logo-image" src="/text-diff-tool/logo.svg" alt="" />
+            <img className="header__logo-image" src={`${APPLICATION_BASE_URL}logo.svg`} alt="" />
           </div>
           <h1 className="header__title">
             <span className="header__brand-text">Text</span>

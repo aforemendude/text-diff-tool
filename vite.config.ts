@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { APPLICATION_BASE_URL } from './src/config.ts';
 
 const productionContentSecurityPolicy =
   "default-src 'none'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; base-uri 'none'; form-action 'none';";
@@ -34,7 +35,7 @@ function developmentContentSecurityPolicyPlugin(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/text-diff-tool/',
+  base: APPLICATION_BASE_URL,
   plugins: [react(), developmentContentSecurityPolicyPlugin()],
   build: {
     outDir: 'docs',

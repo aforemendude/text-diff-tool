@@ -70,6 +70,17 @@ async function expectGroupsDoNotOverlap(page: Page) {
   }
 }
 
+async function controlsShareBrandRow(page: Page) {
+  const [brand, controls] = await Promise.all([
+    page.locator('.header__brand').boundingBox(),
+    page.locator('.header__controls').boundingBox(),
+  ]);
+
+  expect(brand).not.toBeNull();
+  expect(controls).not.toBeNull();
+  return Math.min(brand!.y + brand!.height, controls!.y + controls!.height) > Math.max(brand!.y, controls!.y);
+}
+
 async function expectNoAutomatedViolations(page: Page) {
   const results = await new AxeBuilder({ page }).analyze();
   expect(
@@ -217,63 +228,55 @@ test.describe('Accessibility', () => {
     await expect.poll(() => viewport.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
   });
 
-  test('reflows header controls without overlap at narrow viewport widths', async ({ page }) => {
-    for (const width of [375, 320]) {
-      await page.setViewportSize({ width, height: 667 });
-      await expectGroupsDoNotOverlap(page);
-      expect(
-        await page.evaluate(
-          () =>
-            (
-              globalThis as typeof globalThis & {
-                document: { documentElement: { scrollWidth: number } };
-              }
-            ).document.documentElement.scrollWidth,
-        ),
-      ).toBeLessThanOrEqual(width);
-    }
+  test('reflows header controls without clipping across viewport and text sizes', async ({ page }) => {
+    await test.step('narrow viewports', async () => {
+      for (const width of [375, 320]) {
+        await page.setViewportSize({ width, height: 667 });
+        await expectGroupsDoNotOverlap(page);
+        expect(
+          await page.evaluate(
+            () =>
+              (
+                globalThis as typeof globalThis & {
+                  document: { documentElement: { scrollWidth: number } };
+                }
+              ).document.documentElement.scrollWidth,
+          ),
+        ).toBeLessThanOrEqual(width);
+      }
 
-    await page.getByRole('button', { name: 'About' }).click();
-    await expect(page.getByRole('dialog', { name: 'About TextDiffTool' })).toBeVisible();
-  });
-
-  test('returns header controls to the first row when they fit', async ({ page }) => {
-    const controlsShareBrandRow = async () => {
-      const [brand, controls] = await Promise.all([
-        page.locator('.header__brand').boundingBox(),
-        page.locator('.header__controls').boundingBox(),
-      ]);
-
-      expect(brand).not.toBeNull();
-      expect(controls).not.toBeNull();
-      return Math.min(brand!.y + brand!.height, controls!.y + controls!.height) > Math.max(brand!.y, controls!.y);
-    };
-
-    await page.setViewportSize({ width: 700, height: 667 });
-    expect(await controlsShareBrandRow()).toBe(false);
-    await expectGroupsDoNotOverlap(page);
-
-    await page.setViewportSize({ width: 800, height: 667 });
-    expect(await controlsShareBrandRow()).toBe(true);
-    await expectGroupsDoNotOverlap(page);
-  });
-
-  test('preserves header content when text is resized to 200 percent', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
-    await page.evaluate(() => {
-      (
-        globalThis as typeof globalThis & {
-          document: { documentElement: { style: { fontSize: string } } };
-        }
-      ).document.documentElement.style.fontSize = '200%';
+      await page.getByRole('button', { name: 'About' }).click();
+      await expect(page.getByRole('dialog', { name: 'About TextDiffTool' })).toBeVisible();
+      await page.keyboard.press('Escape');
     });
 
-    await expectGroupsDoNotOverlap(page);
-    expect(
-      await page
-        .locator('#compare-btn, #settings-btn')
-        .evaluateAll((buttons) => buttons.every((button) => button.scrollWidth <= button.clientWidth)),
-    ).toBe(true);
+    await test.step('responsive breakpoint', async () => {
+      await page.setViewportSize({ width: 700, height: 667 });
+      expect(await controlsShareBrandRow(page)).toBe(false);
+      await expectGroupsDoNotOverlap(page);
+
+      await page.setViewportSize({ width: 800, height: 667 });
+      expect(await controlsShareBrandRow(page)).toBe(true);
+      await expectGroupsDoNotOverlap(page);
+    });
+
+    await test.step('200 percent text size', async () => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.evaluate(() => {
+        (
+          globalThis as typeof globalThis & {
+            document: { documentElement: { style: { fontSize: string } } };
+          }
+        ).document.documentElement.style.fontSize = '200%';
+      });
+
+      await expectGroupsDoNotOverlap(page);
+      expect(
+        await page
+          .locator('#compare-btn, #settings-btn')
+          .evaluateAll((buttons) => buttons.every((button) => button.scrollWidth <= button.clientWidth)),
+      ).toBe(true);
+    });
   });
 
   test('passes automated checks in the primary UI states', async ({ page }) => {

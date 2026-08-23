@@ -96,7 +96,7 @@ To test against an already-running development server, set `BASE_URL` and use th
 skips both the production build and preview server. Extra arguments can select a focused spec or browser:
 
 ```bash
-BASE_URL=http://localhost:5173 npm run integration:dev -- playwright/about.spec.ts --project=chromium
+BASE_URL=http://localhost:5173 npm run integration:dev -- playwright/comparison.spec.ts --project=chromium
 ```
 
 Run the Vitest unit tests:
@@ -104,6 +104,9 @@ Run the Vitest unit tests:
 ```bash
 npm run test
 ```
+
+See [Testing strategy and catalog](./TESTING.md) for the boundary between unit and browser coverage and the complete
+Playwright inventory.
 
 ### Format Code
 

@@ -67,6 +67,39 @@ describe('computeDiff', () => {
     ]);
   });
 
+  it('preserves JSON array element order while sorting object keys', () => {
+    const result = getDiffResult(
+      computeDiff(
+        '[{"name":"first","id":1},{"name":"second","id":2}]',
+        '[{"id":2,"name":"second"},{"id":1,"name":"first"}]',
+        {
+          ...options,
+          isJsonMode: true,
+          diffCleanupMode: 'none',
+        },
+      ),
+    );
+
+    const orderedValues = (lines: typeof result.originalLines) =>
+      lines
+        .filter(({ lineNumber }) => lineNumber > 0)
+        .map(({ content }) => content)
+        .filter((content) => content.includes('"id"') || content.includes('"name"'));
+
+    expect(orderedValues(result.originalLines)).toEqual([
+      '    "id": 1,',
+      '    "name": "first"',
+      '    "id": 2,',
+      '    "name": "second"',
+    ]);
+    expect(orderedValues(result.modifiedLines)).toEqual([
+      '    "id": 2,',
+      '    "name": "second"',
+      '    "id": 1,',
+      '    "name": "first"',
+    ]);
+  });
+
   it('retains primitive token spelling during JSON comparison', () => {
     const result = getDiffResult(
       computeDiff('{"n":1}', '{"n":1.0}', { ...options, isJsonMode: true, diffCleanupMode: 'none' }),
@@ -156,6 +189,29 @@ describe('computeDiff', () => {
       },
     });
   });
+
+  it.each([
+    {
+      original: '',
+      modified: 'Some text',
+      expectedOriginal: [{ lineNumber: -1, type: 'delete', content: '' }],
+      expectedModified: [{ lineNumber: 1, type: 'insert', content: 'Some text' }],
+    },
+    {
+      original: 'Some text',
+      modified: '',
+      expectedOriginal: [{ lineNumber: 1, type: 'delete', content: 'Some text' }],
+      expectedModified: [{ lineNumber: -1, type: 'insert', content: '' }],
+    },
+  ])(
+    'aligns one-sided empty input for $original versus $modified',
+    ({ original, modified, expectedOriginal, expectedModified }) => {
+      const result = getDiffResult(computeDiff(original, modified, { ...options, diffCleanupMode: 'none' }));
+
+      expect(result.originalLines).toEqual(expectedOriginal);
+      expect(result.modifiedLines).toEqual(expectedModified);
+    },
+  );
 
   it.each([
     ['e\u0301', 'e\u0300'],
@@ -252,6 +308,18 @@ describe('computeDiff', () => {
       },
     });
   });
+
+  it.each(['constructor', 'toString', 'hasOwnProperty', '__proto__'])(
+    'keeps the inherited prototype name %s equal on an unchanged final line',
+    (inheritedName) => {
+      const result = getDiffResult(
+        computeDiff(`old\n${inheritedName}`, `new\n${inheritedName}`, { ...options, diffCleanupMode: 'none' }),
+      );
+
+      expect(result.originalLines[1]).toEqual({ lineNumber: 2, type: 'equal', content: inheritedName });
+      expect(result.modifiedLines[1]).toEqual({ lineNumber: 2, type: 'equal', content: inheritedName });
+    },
+  );
 
   it.each(['line-grapheme', 'grapheme'] as const)(
     'represents a trailing-newline-only change only in the trailing-newline metadata in %s mode',

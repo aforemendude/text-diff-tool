@@ -11,6 +11,15 @@ async function loadFramedApp(page: Page, baseURL: string | undefined, sandboxed 
   await page.setContent(`<iframe title="TextDiffTool"${sandbox} src="${appUrl}"></iframe>`);
 }
 
+async function expectFramedAppHidden(page: Page) {
+  const frame = page.frameLocator('iframe[title="TextDiffTool"]');
+  await expect(frame.locator('body')).toHaveAttribute('hidden', '');
+  await expect(frame.locator('body')).toHaveAttribute('inert', '');
+  await expect(frame.locator('body')).toBeHidden();
+  await expect(frame.locator('.app')).toHaveCount(0);
+  expect(page.workers()).toEqual([]);
+}
+
 test('uses an environment-specific CSP in development and preview', async ({ page }) => {
   const consoleMessages: string[] = [];
   page.on('console', (message) => consoleMessages.push(message.text()));
@@ -91,24 +100,14 @@ test('loads bundled fonts without a runtime font CDN', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Compare' })).toHaveCSS('font-family', /Inter/);
 });
 
-test('stays hidden and inert inside a cross-origin frame', async ({ page, baseURL }) => {
-  await loadFramedApp(page, baseURL);
+test('stays hidden and inert in framed documents', async ({ page, baseURL }) => {
+  await test.step('when scripts can detect the cross-origin frame', async () => {
+    await loadFramedApp(page, baseURL);
+    await expectFramedAppHidden(page);
+  });
 
-  const frame = page.frameLocator('iframe[title="TextDiffTool"]');
-  await expect(frame.locator('body')).toHaveAttribute('hidden', '');
-  await expect(frame.locator('body')).toHaveAttribute('inert', '');
-  await expect(frame.locator('body')).toBeHidden();
-  await expect(frame.locator('.app')).toHaveCount(0);
-  expect(page.workers()).toEqual([]);
-});
-
-test('stays hidden when iframe sandboxing disables scripts', async ({ page, baseURL }) => {
-  await loadFramedApp(page, baseURL, true);
-
-  const frame = page.frameLocator('iframe[title="TextDiffTool"]');
-  await expect(frame.locator('body')).toHaveAttribute('hidden', '');
-  await expect(frame.locator('body')).toHaveAttribute('inert', '');
-  await expect(frame.locator('body')).toBeHidden();
-  await expect(frame.locator('.app')).toHaveCount(0);
-  expect(page.workers()).toEqual([]);
+  await test.step('when iframe sandboxing disables scripts', async () => {
+    await loadFramedApp(page, baseURL, true);
+    await expectFramedAppHidden(page);
+  });
 });

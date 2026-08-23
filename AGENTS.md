@@ -25,7 +25,7 @@
   development server, preferably in Chromium, for example:
 
   ```bash
-  BASE_URL=http://localhost:5173 npm run integration:dev -- playwright/about.spec.ts --project=chromium
+  BASE_URL=http://localhost:5173 npm run integration:dev -- playwright/comparison.spec.ts --project=chromium
   ```
 
 - Run the full multi-browser integration suite only when the user asks for it or when the scope of the change clearly

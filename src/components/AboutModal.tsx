@@ -1,11 +1,12 @@
 import Modal from './Modal';
+import { APPLICATION_BASE_URL } from '../config';
 import './AboutModal.css';
 
 interface AboutModalProps {
   onClose: () => void;
 }
 
-const publicAssetBaseUrl = import.meta.env.BASE_URL;
+const publicAssetBaseUrl = APPLICATION_BASE_URL;
 const fontLicenseBaseUrl = `${publicAssetBaseUrl}fonts`;
 
 function AboutModal({ onClose }: AboutModalProps) {
@@ -20,7 +21,7 @@ function AboutModal({ onClose }: AboutModalProps) {
       ariaDescribedBy="about-modal-description"
     >
       <div className="about-modal__logo">
-        <img src="/text-diff-tool/logo.svg" alt="" className="about-modal__logo-img" />
+        <img src={`${APPLICATION_BASE_URL}logo.svg`} alt="" className="about-modal__logo-img" />
       </div>
       <p id="about-modal-description" className="about-modal__description">
         A modern, browser-based tool for comparing text and visualizing differences with character-level precision.

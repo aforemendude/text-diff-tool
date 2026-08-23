@@ -24,9 +24,11 @@ describe('AboutModal', () => {
       alt: '',
       className: 'about-modal__logo-img',
     });
-    expect(findElement(tree, (element) => element.props.id === 'about-modal-description').props.className).toBe(
-      'about-modal__description',
-    );
+    expect(findElement(tree, (element) => element.props.id === 'about-modal-description').props).toMatchObject({
+      className: 'about-modal__description',
+      children:
+        'A modern, browser-based tool for comparing text and visualizing differences with character-level precision.',
+    });
     expect(findElements(tree, (element) => element.type === 'h3').map((element) => element.props.children)).toEqual([
       'Features',
       'Privacy',
@@ -49,21 +51,21 @@ describe('AboutModal', () => {
         children: 'View on GitHub',
       }),
       expect.objectContaining({
-        href: expect.stringMatching(/\/fonts\/inter\/OFL\.txt$/),
+        href: '/text-diff-tool/fonts/inter/OFL.txt',
         target: '_blank',
         rel: 'noopener noreferrer',
         'aria-label': 'Inter license (opens in a new tab)',
         children: 'Inter license',
       }),
       expect.objectContaining({
-        href: expect.stringMatching(/\/fonts\/jetbrains-mono\/OFL\.txt$/),
+        href: '/text-diff-tool/fonts/jetbrains-mono/OFL.txt',
         target: '_blank',
         rel: 'noopener noreferrer',
         'aria-label': 'JetBrains Mono license (opens in a new tab)',
         children: 'JetBrains Mono license',
       }),
       expect.objectContaining({
-        href: expect.stringMatching(/\/THIRD_PARTY_NOTICES\.txt$/),
+        href: '/text-diff-tool/THIRD_PARTY_NOTICES.txt',
         target: '_blank',
         rel: 'noopener noreferrer',
         'aria-label': 'Runtime library licenses and notices (opens in a new tab)',
