@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ComputeDiffOptions, ComputeDiffOutcome } from '../utils/diffUtils';
-import type { DiffWorkerResponse } from './diffWorkerProtocol';
-import { DiffProcessTerminatedError, DiffWorkerClient } from './diffWorkerClient';
+import type { ComputeDiffOptions, ComputeDiffOutcome } from './compute';
+import { DiffProcessTerminatedError, DiffWorkerClient } from './workerClient';
+import type { DiffWorkerResponse } from './workerProtocol';
 
 const options: ComputeDiffOptions = {
   isJsonMode: true,

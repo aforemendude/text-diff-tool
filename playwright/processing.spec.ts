@@ -5,7 +5,7 @@ test.describe('Diff processing', () => {
     const workerStarted = page.waitForEvent('worker');
     await page.goto('/');
     const worker = await workerStarted;
-    expect(worker.url()).toContain('diffWorker');
+    expect(worker.url()).toContain('worker');
 
     await page.locator('#original').fill('before');
     await page.locator('#modified').fill('after');

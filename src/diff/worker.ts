@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
-import { computeDiff } from '../utils/diffUtils';
-import type { DiffWorkerRequest, DiffWorkerResponse } from './diffWorkerProtocol';
+import { computeDiff } from './compute';
+import type { DiffWorkerRequest, DiffWorkerResponse } from './workerProtocol';
 
 const workerScope = self as DedicatedWorkerGlobalScope;
 

@@ -1,5 +1,5 @@
-import type { ComputeDiffOptions, ComputeDiffOutcome } from '../utils/diffUtils';
-import type { DiffWorkerRequest, DiffWorkerResponse } from './diffWorkerProtocol';
+import type { ComputeDiffOptions, ComputeDiffOutcome } from './compute';
+import type { DiffWorkerRequest, DiffWorkerResponse } from './workerProtocol';
 
 export interface DiffProcess {
   outcome: Promise<ComputeDiffOutcome>;
@@ -16,7 +16,7 @@ export class DiffProcessTerminatedError extends Error {
 }
 
 const createDiffWorker: DiffWorkerFactory = () =>
-  new Worker(new URL('./diffWorker.ts', import.meta.url), { type: 'module' });
+  new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
 
 export class DiffWorkerClient {
   private worker: Worker | null;

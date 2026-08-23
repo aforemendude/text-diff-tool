@@ -1,4 +1,4 @@
-import type { ComputeDiffOptions, ComputeDiffOutcome } from '../utils/diffUtils';
+import type { ComputeDiffOptions, ComputeDiffOutcome } from './compute';
 
 export interface DiffWorkerRequest {
   type: 'compute-diff';

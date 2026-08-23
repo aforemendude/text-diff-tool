@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { findElement } from '../test/reactElements';
-import type { DiffResult, LineDiff } from '../types/diff';
+import type { DiffResult, LineDiff } from '../diff/types';
 import CompareDisplay from './CompareDisplay';
 
 const reactMocks = vi.hoisted(() => ({ useState: vi.fn() }));

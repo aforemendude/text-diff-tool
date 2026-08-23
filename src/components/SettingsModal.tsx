@@ -1,5 +1,5 @@
 import React from 'react';
-import type { DiffAlgorithm, DiffCleanupMode, DiffMode } from '../types/diff';
+import type { DiffAlgorithm, DiffCleanupMode, DiffMode } from '../diff/types';
 import Modal from './Modal';
 import './SettingsModal.css';
 

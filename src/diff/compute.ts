@@ -2,7 +2,7 @@ import { cleanupEfficiency, cleanupSemantic } from '@aforemendude/diff/cleanup';
 import { diffGraphemes, type Diff } from '@aforemendude/diff/grapheme';
 import { DELETE, EQUAL, INSERT, diffLines } from '@aforemendude/diff/line';
 import { parseJson, serializeJson } from '@aforemendude/json-parse';
-import type { CharDiff, DiffAlgorithm, DiffCleanupMode, DiffMode, DiffResult, LineDiff } from '../types/diff';
+import type { CharDiff, DiffAlgorithm, DiffCleanupMode, DiffMode, DiffResult, LineDiff } from './types';
 
 export interface ComputeDiffOptions {
   isJsonMode: boolean;

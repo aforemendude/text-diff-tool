@@ -3,10 +3,10 @@
 ## Scope and review basis
 
 Reviewed the current production UI/runtime implementation in `src/main.tsx`, `src/App.tsx`, all production files under
-`src/components/`, the associated application/component CSS, and `index.html`. I also inspected `src/types/diff.ts`,
-`src/utils/diffUtils.ts`, `vite.config.ts`, and the README where needed to validate component contracts, deployment
-paths, and user-visible behavior. Tests were consulted only as documentation of intended component contracts; their
-cases, fixtures, assertions, and coverage were not reviewed. Generated output, dependency source, and vendored code were
+`src/components/`, the associated application/component CSS, and `index.html`. I also inspected `src/diff/types.ts`,
+`src/diff/compute.ts`, `vite.config.ts`, and the README where needed to validate component contracts, deployment paths,
+and user-visible behavior. Tests were consulted only as documentation of intended component contracts; their cases,
+fixtures, assertions, and coverage were not reviewed. Generated output, dependency source, and vendored code were
 excluded.
 
 Findings were verified against the current source and, where noted, a temporary production build rendered in headless

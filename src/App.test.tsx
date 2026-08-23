@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { findElement, findElements } from './test/reactElements';
-import type { DiffAlgorithm, DiffCleanupMode, DiffMode, DiffResult } from './types/diff';
-import type { ComputeDiffOutcome } from './utils/diffUtils';
-import type { DiffProcess } from './workers/diffWorkerClient';
+import type { ComputeDiffOutcome } from './diff/compute';
+import type { DiffAlgorithm, DiffCleanupMode, DiffMode, DiffResult } from './diff/types';
+import type { DiffProcess } from './diff/workerClient';
 import App from './App';
 
 const reactMocks = vi.hoisted(() => ({ useEffect: vi.fn(), useRef: vi.fn(), useState: vi.fn() }));
@@ -15,7 +15,7 @@ vi.mock('react', async (importOriginal) => ({
   useState: reactMocks.useState,
 }));
 
-vi.mock('./workers/diffWorkerClient', () => ({
+vi.mock('./diff/workerClient', () => ({
   initializeDiffWorker: workerMocks.initializeDiffWorker,
   startDiffProcess: workerMocks.startDiffProcess,
 }));

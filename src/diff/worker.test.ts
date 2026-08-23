@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ComputeDiffOptions, ComputeDiffOutcome } from '../utils/diffUtils';
-import type { DiffWorkerRequest } from './diffWorkerProtocol';
+import type { ComputeDiffOptions, ComputeDiffOutcome } from './compute';
+import type { DiffWorkerRequest } from './workerProtocol';
 
-const diffUtilsMocks = vi.hoisted(() => ({ computeDiff: vi.fn() }));
+const computeMocks = vi.hoisted(() => ({ computeDiff: vi.fn() }));
 
-vi.mock('../utils/diffUtils', () => ({ computeDiff: diffUtilsMocks.computeDiff }));
+vi.mock('./compute', () => ({ computeDiff: computeMocks.computeDiff }));
 
 const postMessage = vi.fn();
 let messageListener: ((event: MessageEvent<DiffWorkerRequest>) => void) | undefined;
@@ -21,17 +21,17 @@ function dispatchRequest(request: DiffWorkerRequest): void {
   messageListener?.({ data: request } as MessageEvent<DiffWorkerRequest>);
 }
 
-describe('diffWorker', () => {
+describe('worker', () => {
   beforeAll(async () => {
     vi.stubGlobal('self', workerScope);
     const preserveValue = (<Value>(value: Value) => value) as typeof Object.freeze;
     freezeObjectPrototype = vi.spyOn(Object, 'freeze').mockImplementation(preserveValue);
 
-    await import('./diffWorker');
+    await import('./worker');
   });
 
   beforeEach(() => {
-    diffUtilsMocks.computeDiff.mockReset();
+    computeMocks.computeDiff.mockReset();
     postMessage.mockReset();
   });
 
@@ -49,7 +49,7 @@ describe('diffWorker', () => {
   it('ignores messages that are not diff requests', () => {
     dispatchRequest({ type: 'unexpected-request' } as unknown as DiffWorkerRequest);
 
-    expect(diffUtilsMocks.computeDiff).not.toHaveBeenCalled();
+    expect(computeMocks.computeDiff).not.toHaveBeenCalled();
     expect(postMessage).not.toHaveBeenCalled();
   });
 
@@ -62,7 +62,7 @@ describe('diffWorker', () => {
       editCost: 4,
     };
     const outcome: ComputeDiffOutcome = { status: 'identical' };
-    diffUtilsMocks.computeDiff.mockReturnValue(outcome);
+    computeMocks.computeDiff.mockReturnValue(outcome);
 
     dispatchRequest({
       type: 'compute-diff',
@@ -71,12 +71,12 @@ describe('diffWorker', () => {
       options,
     });
 
-    expect(diffUtilsMocks.computeDiff).toHaveBeenCalledExactlyOnceWith('before', 'after', options);
+    expect(computeMocks.computeDiff).toHaveBeenCalledExactlyOnceWith('before', 'after', options);
     expect(postMessage).toHaveBeenCalledExactlyOnceWith({ type: 'diff-complete', outcome });
   });
 
   it('posts the message from an Error thrown during diff computation', () => {
-    diffUtilsMocks.computeDiff.mockImplementation(() => {
+    computeMocks.computeDiff.mockImplementation(() => {
       throw new Error('Unable to compute diff');
     });
 
@@ -100,7 +100,7 @@ describe('diffWorker', () => {
   });
 
   it('posts a stable fallback when diff computation throws a non-Error value', () => {
-    diffUtilsMocks.computeDiff.mockImplementation(() => {
+    computeMocks.computeDiff.mockImplementation(() => {
       throw 'unexpected failure';
     });
 

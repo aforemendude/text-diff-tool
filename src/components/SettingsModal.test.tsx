@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { findElement, findElements } from '../test/reactElements';
-import type { DiffAlgorithm, DiffCleanupMode, DiffMode } from '../types/diff';
+import type { DiffAlgorithm, DiffCleanupMode, DiffMode } from '../diff/types';
 import Modal from './Modal';
 import SettingsModal from './SettingsModal';
 

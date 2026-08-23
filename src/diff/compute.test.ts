@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { DiffCleanupMode, DiffResult } from '../types/diff';
-import { computeDiff, type ComputeDiffOutcome } from './diffUtils';
+import { computeDiff, type ComputeDiffOutcome } from './compute';
+import type { DiffCleanupMode, DiffResult } from './types';
 
 const options = {
   isJsonMode: false,
