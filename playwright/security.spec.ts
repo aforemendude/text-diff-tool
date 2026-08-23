@@ -36,6 +36,13 @@ test('uses an environment-specific CSP in development and preview', async ({ pag
     ?.slice(1);
   expect(fontSources).toEqual(["'self'"]);
 
+  const workerSources = contentSecurityPolicy
+    ?.split(';')
+    .map((directive) => directive.trim().split(/\s+/))
+    .find(([directive]) => directive === 'worker-src')
+    ?.slice(1);
+  expect(workerSources).toEqual(["'self'", 'blob:']);
+
   if (isDevelopmentServer) {
     const webSocketEndpoint = new URL(page.url());
     webSocketEndpoint.protocol = webSocketEndpoint.protocol === 'https:' ? 'wss:' : 'ws:';

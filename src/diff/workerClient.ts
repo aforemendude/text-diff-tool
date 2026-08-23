@@ -1,4 +1,5 @@
 import type { ComputeDiffOptions, ComputeDiffOutcome } from './compute';
+import InlineDiffWorker from './worker?worker&inline';
 import type { DiffWorkerRequest, DiffWorkerResponse } from './workerProtocol';
 
 export interface DiffProcess {
@@ -15,8 +16,7 @@ export class DiffProcessTerminatedError extends Error {
   }
 }
 
-const createDiffWorker: DiffWorkerFactory = () =>
-  new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+const createDiffWorker: DiffWorkerFactory = () => new InlineDiffWorker();
 
 export class DiffWorkerClient {
   private worker: Worker | null;

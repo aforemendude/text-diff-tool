@@ -5,7 +5,13 @@ test.describe('Diff processing', () => {
     const workerStarted = page.waitForEvent('worker');
     await page.goto('/');
     const worker = await workerStarted;
-    expect(worker.url()).toContain('worker');
+    const isDevelopmentServer = (await page.locator('script[src$="/@vite/client"]').count()) > 0;
+
+    if (isDevelopmentServer) {
+      expect(worker.url()).toContain('worker');
+    } else {
+      expect(worker.url()).toMatch(/^blob:/);
+    }
 
     await page.locator('#original').fill('before');
     await page.locator('#modified').fill('after');

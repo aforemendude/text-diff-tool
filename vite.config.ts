@@ -3,7 +3,7 @@ import type { Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const productionContentSecurityPolicy =
-  "default-src 'none'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self'; base-uri 'none'; form-action 'none';";
+  "default-src 'none'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; base-uri 'none'; form-action 'none';";
 
 function developmentContentSecurityPolicyPlugin(): Plugin {
   return {
