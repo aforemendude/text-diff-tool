@@ -386,6 +386,7 @@ function computeGraphemeDiff(
           appendCharacterDiff(originalBuilder, 'delete', token);
         }
       } else if (operation === INSERT) {
+        originalBuilder.separateNextCharDiff = true;
         if (isLineBreak(token)) {
           finishModifiedLine();
         } else {

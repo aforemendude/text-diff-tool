@@ -447,6 +447,37 @@ describe('computeDiff', () => {
     ]);
   });
 
+  it.each([
+    ['myers', 'none'],
+    ['myers', 'semantic'],
+    ['myers', 'efficiency'],
+    ['adaptive', 'none'],
+    ['adaptive', 'semantic'],
+    ['adaptive', 'efficiency'],
+  ] as const)(
+    'preserves the original-side equality boundary for insertion markers with %s and %s cleanup',
+    (diffAlgorithm, diffCleanupMode) => {
+      const result = getDiffResult(
+        computeDiff('abcd', 'abXcd', {
+          ...options,
+          diffMode: 'grapheme',
+          diffAlgorithm,
+          diffCleanupMode,
+        }),
+      );
+
+      expect(getLine(result.originalLines, 0).charDiffs).toEqual([
+        { type: 'equal', text: 'ab' },
+        { type: 'equal', text: 'cd' },
+      ]);
+      expect(getLine(result.modifiedLines, 0).charDiffs).toEqual([
+        { type: 'equal', text: 'ab' },
+        { type: 'insert', text: 'X' },
+        { type: 'equal', text: 'cd' },
+      ]);
+    },
+  );
+
   it.each(['myers', 'adaptive'] as const)('supports the selectable %s algorithm in both diff modes', (algorithm) => {
     for (const diffMode of ['line-grapheme', 'grapheme'] as const) {
       const result = getDiffResult(
