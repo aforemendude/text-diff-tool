@@ -38,10 +38,10 @@ describe('AboutModal', () => {
       'list',
     ]);
     expect(
-      findElements(tree, (element) => element.props.className === 'about-modal__check').every(
-        (check) => check.props['aria-hidden'] === 'true',
+      findElements(tree, (element) => element.props.className === 'about-modal__check').map(
+        (check) => check.props['aria-hidden'],
       ),
-    ).toBe(true);
+    ).toEqual(['true', 'true', 'true', 'true', 'true', 'true', 'true']);
     expect(findElements(tree, (element) => element.type === 'a').map((element) => element.props)).toEqual([
       expect.objectContaining({
         href: 'https://github.com/aforemendude/text-diff-tool',

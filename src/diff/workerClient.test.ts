@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ComputeDiffOptions, ComputeDiffOutcome } from './compute';
-import { DiffProcessTerminatedError, DiffWorkerClient } from './workerClient';
+import { DiffProcessTerminatedError, DiffWorkerClient, initializeDiffWorker, startDiffProcess } from './workerClient';
 import type { DiffWorkerResponse } from './workerProtocol';
+
+const inlineWorkerMocks = vi.hoisted(() => ({ constructor: vi.fn() }));
+
+vi.mock('./worker?worker&inline', () => ({ default: inlineWorkerMocks.constructor }));
 
 const options: ComputeDiffOptions = {
   isJsonMode: true,
@@ -63,6 +67,15 @@ function expectWorkerStopped({ worker, terminate }: WorkerHarness): void {
 }
 
 describe('DiffWorkerClient', () => {
+  it('surfaces an initial worker construction failure', () => {
+    const factory = vi.fn(() => {
+      throw new Error('Worker construction failed');
+    });
+
+    expect(() => new DiffWorkerClient(factory)).toThrow('Worker construction failed');
+    expect(factory).toHaveBeenCalledOnce();
+  });
+
   it('constructs the worker immediately and sends the complete diff request', async () => {
     const { factory, workers } = createWorkerFactoryHarness();
     const client = new DiffWorkerClient(factory);
@@ -169,6 +182,37 @@ describe('DiffWorkerClient', () => {
     expectWorkerIdle(workers[1]);
   });
 
+  it('recovers after replacement creation fails and surfaces a failed on-demand retry', async () => {
+    const { factory, workers } = createWorkerFactoryHarness();
+    const client = new DiffWorkerClient(factory);
+    const process = client.startDiffProcess('old', 'new', options);
+    factory.mockImplementationOnce(() => {
+      throw new Error('Replacement worker unavailable');
+    });
+
+    sendResponse(workers[0].worker, { type: 'unexpected-response' } as unknown as DiffWorkerResponse);
+
+    await expect(process.outcome).rejects.toThrow('The diff worker returned an invalid response.');
+    expect(factory).toHaveBeenCalledTimes(2);
+    expectWorkerStopped(workers[0]);
+    factory.mockImplementationOnce(() => {
+      throw new Error('Retry worker unavailable');
+    });
+    expect(() => client.startDiffProcess('retry old', 'retry new', options)).toThrow('Retry worker unavailable');
+    expect(factory).toHaveBeenCalledTimes(3);
+
+    const retryProcess = client.startDiffProcess('retry old', 'retry new', options);
+    expect(factory).toHaveBeenCalledTimes(4);
+    expect(workers[1].postMessage).toHaveBeenCalledExactlyOnceWith({
+      type: 'compute-diff',
+      originalText: 'retry old',
+      modifiedText: 'retry new',
+      options,
+    });
+    sendResponse(workers[1].worker, { type: 'diff-complete', outcome: { status: 'identical' } });
+    await expect(retryProcess.outcome).resolves.toEqual({ status: 'identical' });
+  });
+
   it.each([
     ['uses the runtime error message', 'Worker script crashed', 'Worker script crashed'],
     ['uses a fallback when the runtime error has no message', '', 'The diff worker failed to load.'],
@@ -266,5 +310,28 @@ describe('DiffWorkerClient', () => {
     const rejection = expect(process.outcome).rejects.toBeInstanceOf(DiffProcessTerminatedError);
     process.terminate();
     await rejection;
+  });
+
+  it('initializes one module-level client and routes shared requests through its worker', async () => {
+    const { factory, workers } = createWorkerFactoryHarness();
+    inlineWorkerMocks.constructor.mockReset();
+    inlineWorkerMocks.constructor.mockImplementation(function InlineWorkerMock() {
+      return factory();
+    });
+
+    const process = startDiffProcess('shared old', 'shared new', options);
+    const initializedClient = initializeDiffWorker();
+
+    expect(initializeDiffWorker()).toBe(initializedClient);
+    expect(inlineWorkerMocks.constructor).toHaveBeenCalledOnce();
+    expect(workers[0].postMessage).toHaveBeenCalledExactlyOnceWith({
+      type: 'compute-diff',
+      originalText: 'shared old',
+      modifiedText: 'shared new',
+      options,
+    });
+    sendResponse(workers[0].worker, { type: 'diff-complete', outcome: { status: 'identical' } });
+    await expect(process.outcome).resolves.toEqual({ status: 'identical' });
+    expectWorkerIdle(workers[0]);
   });
 });

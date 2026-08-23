@@ -76,6 +76,12 @@ function createDeferredProcess(): DeferredProcess {
   };
 }
 
+function expectNoStateUpdates(setters: ReturnType<typeof vi.fn>[]): void {
+  for (const setter of setters) {
+    expect(setter).not.toHaveBeenCalled();
+  }
+}
+
 function renderApp(overrides: Partial<AppState> = {}, existingProcessRef?: { current: DiffProcess | null }) {
   const state: AppState = {
     originalText: '',
@@ -156,6 +162,26 @@ describe('App', () => {
     expect(findElements(tree, (element) => element.type === 'mock-modal')).toEqual([]);
     expect(findElements(tree, (element) => element.type === 'mock-processing-modal')).toEqual([]);
     expect(workerMocks.initializeDiffWorker).toHaveBeenCalledOnce();
+  });
+
+  it.each<{ stateLabel: string; overrides: Partial<AppState>; expectedStatus: string }>([
+    { stateLabel: 'editing', overrides: {}, expectedStatus: '' },
+    { stateLabel: 'processing', overrides: { isProcessing: true }, expectedStatus: 'Comparison in progress.' },
+    {
+      stateLabel: 'comparison',
+      overrides: { isCompareMode: true },
+      expectedStatus: 'Comparison complete. Results are ready.',
+    },
+  ])('announces the exact application status while $stateLabel', ({ overrides, expectedStatus }) => {
+    const { tree } = renderApp(overrides);
+    const status = findElement(tree, (element) => element.props.role === 'status');
+
+    expect(status.props).toMatchObject({
+      className: 'visually-hidden',
+      'aria-live': 'polite',
+      'aria-atomic': 'true',
+      children: expectedStatus,
+    });
   });
 
   it('runs the diff in a worker, then stores a successful result and enters compare mode', async () => {
@@ -272,7 +298,7 @@ describe('App', () => {
     deferred.resolve({ status: 'success', diffResult });
     await deferred.process.outcome;
 
-    expect(initialRender.setters.every((setter) => setter.mock.calls.length === 0)).toBe(true);
+    expectNoStateUpdates(initialRender.setters);
   });
 
   it('terminates an active process on unmount and ignores its eventual outcome', async () => {
@@ -290,7 +316,7 @@ describe('App', () => {
     deferred.resolve({ status: 'success', diffResult });
     await deferred.process.outcome;
 
-    expect(rendered.setters.every((setter) => setter.mock.calls.length === 0)).toBe(true);
+    expectNoStateUpdates(rendered.setters);
   });
 
   it('returns to editing with an error modal when the worker fails', async () => {
@@ -313,13 +339,52 @@ describe('App', () => {
     expect(setters[3]).not.toHaveBeenCalled();
   });
 
+  it('opens the exact processing error without entering the processing state when worker startup throws', () => {
+    workerMocks.startDiffProcess.mockImplementation(() => {
+      throw new Error('worker unavailable');
+    });
+    const { tree, setters } = renderApp({ originalText: 'before', modifiedText: 'after' });
+
+    (findElement(tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
+
+    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
+      isOpen: true,
+      title: 'Diff Processing Error',
+      message: 'Failed to compare the texts:\n\nworker unavailable',
+      variant: 'error',
+    });
+    expect(setters[10]).not.toHaveBeenCalled();
+    expect(setters[2]).not.toHaveBeenCalled();
+    expect(setters[3]).not.toHaveBeenCalled();
+  });
+
+  it('uses the stable processing-error fallback when the worker rejects with a non-Error value', async () => {
+    const deferred = createDeferredProcess();
+    workerMocks.startDiffProcess.mockReturnValue(deferred.process);
+    const { tree, setters } = renderApp({ originalText: 'before', modifiedText: 'after' });
+
+    (findElement(tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
+    deferred.reject('unexpected failure');
+    await deferred.process.outcome.catch(() => undefined);
+
+    expect(setters[10]).toHaveBeenLastCalledWith(false);
+    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
+      isOpen: true,
+      title: 'Diff Processing Error',
+      message: 'Failed to compare the texts:\n\nUnknown error',
+      variant: 'error',
+    });
+    expect(setters[2]).not.toHaveBeenCalled();
+    expect(setters[3]).not.toHaveBeenCalled();
+  });
+
   it('does not start another process while one is already running', () => {
     const { tree, setters } = renderApp({ isProcessing: true });
 
     (findElement(tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
 
     expect(workerMocks.startDiffProcess).not.toHaveBeenCalled();
-    expect(setters.every((setter) => setter.mock.calls.length === 0)).toBe(true);
+    expectNoStateUpdates(setters);
   });
 
   it('renders the current diff and clears it when returning to edit mode', () => {

@@ -102,8 +102,25 @@ describe('CompareDisplay', () => {
       'shared',
     ]);
     expect(markup.match(/class="visually-hidden">No corresponding line\.<\/span>/g)).toHaveLength(2);
+    expect(markup.match(/class="visually-hidden">Deleted line\. <\/span>/g)).toHaveLength(1);
+    expect(markup.match(/class="visually-hidden">Inserted line\. <\/span>/g)).toHaveLength(1);
     expect(markup.match(/class="diff-line__number" aria-hidden="true"/g)).toHaveLength(6);
     expect(markup.match(/class="diff-line__gutter" aria-hidden="true"/g)).toHaveLength(6);
+  });
+
+  it('keeps an equal blank line numbered and renders its non-breaking visual placeholder', () => {
+    const blankLine: LineDiff = { lineNumber: 1, type: 'equal', content: '' };
+    configureExpandedSections(new Set(['0-0']));
+    const markup = renderToStaticMarkup(<CompareDisplay diffResult={result([blankLine], [blankLine])} />);
+
+    expect([...markup.matchAll(/class="diff-line__number"[^>]*>([^<]*)/g)].map((match) => match[1])).toEqual([
+      '1',
+      '1',
+    ]);
+    expect([...markup.matchAll(/class="diff-line__text">([^<]*)/g)].map((match) => match[1])).toEqual([
+      '\u00a0',
+      '\u00a0',
+    ]);
   });
 
   it('renders paired modifications with semantic character-level insertion and deletion annotations', () => {

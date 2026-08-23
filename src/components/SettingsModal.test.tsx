@@ -87,12 +87,11 @@ describe('SettingsModal', () => {
       { value: 'efficiency', name: 'diffCleanupMode', checked: false },
     ]);
     expect(defaultBadges.map((badge) => badge.props.children)).toEqual(['Default', 'Default', 'Default']);
-    expect(radios.some((radio) => radio.props.value === 'sparse')).toBe(false);
     expect(
-      findElements(tree, (element) => element.props.className === 'settings-modal__option-indicator').every(
-        (indicator) => indicator.props['aria-hidden'] === 'true',
+      findElements(tree, (element) => element.props.className === 'settings-modal__option-indicator').map(
+        (indicator) => indicator.props['aria-hidden'],
       ),
-    ).toBe(true);
+    ).toEqual(['true', 'true', 'true', 'true', 'true', 'true', 'true']);
   });
 
   it('marks only the current option in each group as selected', () => {

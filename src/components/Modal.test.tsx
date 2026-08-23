@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { findElement, findElements } from '../test/reactElements';
 import Modal from './Modal';
 
@@ -23,6 +23,10 @@ describe('Modal', () => {
     reactMocks.useId.mockReturnValueOnce('modal-title').mockReturnValueOnce('modal-message');
     reactMocks.useRef.mockReset();
     reactMocks.useRef.mockReturnValue({ current: null });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('renders the default error message contract and closes from every exposed control', () => {
@@ -102,6 +106,91 @@ describe('Modal', () => {
     ).toBe(child);
     expect(findElements(tree, (element) => element.type === 'button')[1].props.children).toBe('Done');
     expect(findElements(tree, (element) => element.props.className === 'modal__message')).toEqual([]);
+  });
+
+  it('opens the native dialog on mount, closes it on unmount, and restores the prior focus', () => {
+    class TestHTMLElement {
+      focus = vi.fn();
+    }
+
+    const previouslyFocused = new TestHTMLElement();
+    const dialog = {
+      open: false,
+      showModal: vi.fn(() => {
+        dialog.open = true;
+      }),
+      close: vi.fn(() => {
+        dialog.open = false;
+      }),
+    } as unknown as HTMLDialogElement;
+    let cleanup: (() => void) | undefined;
+    vi.stubGlobal('HTMLElement', TestHTMLElement);
+    vi.stubGlobal('document', { activeElement: previouslyFocused });
+    reactMocks.useRef.mockReturnValue({ current: dialog });
+    reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => {
+      cleanup = effect() ?? undefined;
+    });
+
+    Modal({ title: 'Information', message: 'Details', onClose: vi.fn() });
+
+    expect(dialog.showModal).toHaveBeenCalledOnce();
+    expect(cleanup).toBeTypeOf('function');
+    cleanup?.();
+    expect(dialog.close).toHaveBeenCalledOnce();
+    expect(previouslyFocused.focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true });
+  });
+
+  it('contains Tab focus in the enabled dialog controls and focuses the dialog when none exist', () => {
+    const disabled = { hasAttribute: vi.fn((name: string) => name === 'disabled'), focus: vi.fn() };
+    const first = { hasAttribute: vi.fn(() => false), focus: vi.fn() };
+    const middle = { hasAttribute: vi.fn(() => false), focus: vi.fn() };
+    const last = { hasAttribute: vi.fn(() => false), focus: vi.fn() };
+    const focusableElements = [disabled, first, middle, last];
+    const dialog = {
+      querySelectorAll: vi.fn(() => focusableElements),
+      contains: vi.fn((element: unknown) => focusableElements.includes(element as (typeof focusableElements)[number])),
+      focus: vi.fn(),
+    } as unknown as HTMLDialogElement;
+    const documentState: { activeElement: unknown } = { activeElement: first };
+    vi.stubGlobal('document', documentState);
+    reactMocks.useRef.mockReturnValue({ current: dialog });
+    const tree = Modal({ title: 'Information', message: 'Details', onClose: vi.fn() });
+    const keyDown = tree.props.onKeyDown as (event: {
+      key: string;
+      shiftKey: boolean;
+      preventDefault: () => void;
+    }) => void;
+
+    const backwardPreventDefault = vi.fn();
+    keyDown({ key: 'Tab', shiftKey: true, preventDefault: backwardPreventDefault });
+    expect(backwardPreventDefault).toHaveBeenCalledOnce();
+    expect(last.focus).toHaveBeenCalledOnce();
+    expect(disabled.focus).not.toHaveBeenCalled();
+
+    documentState.activeElement = last;
+    const forwardPreventDefault = vi.fn();
+    keyDown({ key: 'Tab', shiftKey: false, preventDefault: forwardPreventDefault });
+    expect(forwardPreventDefault).toHaveBeenCalledOnce();
+    expect(first.focus).toHaveBeenCalledOnce();
+
+    documentState.activeElement = {};
+    const outsidePreventDefault = vi.fn();
+    keyDown({ key: 'Tab', shiftKey: false, preventDefault: outsidePreventDefault });
+    expect(outsidePreventDefault).toHaveBeenCalledOnce();
+    expect(first.focus).toHaveBeenCalledTimes(2);
+
+    documentState.activeElement = middle;
+    const middlePreventDefault = vi.fn();
+    keyDown({ key: 'Tab', shiftKey: false, preventDefault: middlePreventDefault });
+    expect(middlePreventDefault).not.toHaveBeenCalled();
+    expect(first.focus).toHaveBeenCalledTimes(2);
+    expect(last.focus).toHaveBeenCalledOnce();
+
+    dialog.querySelectorAll = vi.fn(() => []) as unknown as typeof dialog.querySelectorAll;
+    const emptyPreventDefault = vi.fn();
+    keyDown({ key: 'Tab', shiftKey: false, preventDefault: emptyPreventDefault });
+    expect(emptyPreventDefault).toHaveBeenCalledOnce();
+    expect(dialog.focus).toHaveBeenCalledOnce();
   });
 
   it('keeps a non-dismissible modal open until its dedicated action is used', () => {

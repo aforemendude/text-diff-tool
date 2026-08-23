@@ -242,6 +242,7 @@ describe('computeDiff', () => {
     mode: DiffCleanupMode;
     editCost: number;
     expectedOriginal: { type: 'equal' | 'delete'; text: string }[];
+    expectedModified: { type: 'equal' | 'insert'; text: string }[];
   }>([
     {
       mode: 'none',
@@ -253,6 +254,13 @@ describe('computeDiff', () => {
         { type: 'delete', text: '34' },
         { type: 'equal', text: 'ef' },
       ],
+      expectedModified: [
+        { type: 'equal', text: 'ab' },
+        { type: 'insert', text: 'XY' },
+        { type: 'equal', text: 'cd' },
+        { type: 'insert', text: 'ZZ' },
+        { type: 'equal', text: 'ef' },
+      ],
     },
     {
       mode: 'semantic',
@@ -260,6 +268,11 @@ describe('computeDiff', () => {
       expectedOriginal: [
         { type: 'equal', text: 'ab' },
         { type: 'delete', text: '12cd34' },
+        { type: 'equal', text: 'ef' },
+      ],
+      expectedModified: [
+        { type: 'equal', text: 'ab' },
+        { type: 'insert', text: 'XYcdZZ' },
         { type: 'equal', text: 'ef' },
       ],
     },
@@ -273,6 +286,13 @@ describe('computeDiff', () => {
         { type: 'delete', text: '34' },
         { type: 'equal', text: 'ef' },
       ],
+      expectedModified: [
+        { type: 'equal', text: 'ab' },
+        { type: 'insert', text: 'XY' },
+        { type: 'equal', text: 'cd' },
+        { type: 'insert', text: 'ZZ' },
+        { type: 'equal', text: 'ef' },
+      ],
     },
     {
       mode: 'efficiency',
@@ -282,13 +302,19 @@ describe('computeDiff', () => {
         { type: 'delete', text: '12cd34' },
         { type: 'equal', text: 'ef' },
       ],
+      expectedModified: [
+        { type: 'equal', text: 'ab' },
+        { type: 'insert', text: 'XYcdZZ' },
+        { type: 'equal', text: 'ef' },
+      ],
     },
-  ])('applies $mode cleanup with edit cost $editCost', ({ mode, editCost, expectedOriginal }) => {
+  ])('applies $mode cleanup with edit cost $editCost', ({ mode, editCost, expectedOriginal, expectedModified }) => {
     const result = getDiffResult(
       computeDiff('ab12cd34ef', 'abXYcdZZef', { ...options, diffCleanupMode: mode, editCost }),
     );
 
     expect(result.originalLines[0].charDiffs).toEqual(expectedOriginal);
+    expect(result.modifiedLines[0].charDiffs).toEqual(expectedModified);
   });
 
   it('keeps a former final line equal when another line is appended', () => {
@@ -402,8 +428,16 @@ describe('computeDiff', () => {
         }),
       );
 
-      expect(result.originalLines.map(({ lineNumber }) => lineNumber)).toEqual([1, 2]);
-      expect(result.modifiedLines.map(({ lineNumber }) => lineNumber)).toEqual([1, 2]);
+      expect(result.originalLines.map(({ lineNumber, type, content }) => ({ lineNumber, type, content }))).toEqual([
+        { lineNumber: 1, type: 'modify', content: 'before' },
+        { lineNumber: 2, type: 'equal', content: 'shared' },
+      ]);
+      expect(result.modifiedLines.map(({ lineNumber, type, content }) => ({ lineNumber, type, content }))).toEqual([
+        { lineNumber: 1, type: 'modify', content: 'after' },
+        { lineNumber: 2, type: 'equal', content: 'shared' },
+      ]);
+      expect(result.originalLines[0].charDiffs?.map(({ text }) => text).join('')).toBe('before');
+      expect(result.modifiedLines[0].charDiffs?.map(({ text }) => text).join('')).toBe('after');
     }
   });
 
@@ -473,6 +507,37 @@ describe('computeDiff', () => {
       { type: 'equal', content: 'a' },
       { type: 'insert', content: 'b' },
     ]);
+  });
+
+  it('right-aligns an oversized whole-content grapheme hunk without dropping either side', () => {
+    const original = Array.from({ length: 1_000 }, () => 'a').join('\n');
+    const modified = Array.from({ length: 999 }, () => 'b').join('\r\n');
+    const result = getDiffResult(
+      computeDiff(original, modified, {
+        ...options,
+        diffMode: 'grapheme',
+        diffCleanupMode: 'none',
+      }),
+    );
+
+    expect(result.originalLines).toHaveLength(1_000);
+    expect(result.modifiedLines).toHaveLength(1_000);
+    expect(result.originalLines[0]).toEqual({ lineNumber: 1, type: 'delete', content: 'a' });
+    expect(result.modifiedLines[0]).toEqual({ lineNumber: -1, type: 'insert', content: '' });
+    expect(result.originalLines[1]).toEqual({
+      lineNumber: 2,
+      type: 'modify',
+      content: 'a',
+      charDiffs: [{ type: 'delete', text: 'a' }],
+    });
+    expect(result.modifiedLines[1]).toEqual({
+      lineNumber: 1,
+      type: 'modify',
+      content: 'b',
+      charDiffs: [{ type: 'insert', text: 'b' }],
+    });
+    expect(result.originalLines.at(-1)).toMatchObject({ lineNumber: 1_000, type: 'modify', content: 'a' });
+    expect(result.modifiedLines.at(-1)).toMatchObject({ lineNumber: 999, type: 'modify', content: 'b' });
   });
 
   it('finds a changed line beyond 40,000 unique lines', () => {

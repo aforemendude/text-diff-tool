@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { findElement } from '../test/reactElements';
+import { findElement, findElements } from '../test/reactElements';
 import AboutModal from './AboutModal';
 import Header from './Header';
 import SettingsModal from './SettingsModal';
@@ -58,6 +58,8 @@ describe('Header', () => {
     expect(checkbox.props).toMatchObject({ checked: true, disabled: false });
     expect(logo.props).toMatchObject({ alt: '', src: '/text-diff-tool/logo.svg' });
     expect(aboutIcon.props).toMatchObject({ 'aria-hidden': 'true', focusable: 'false' });
+    expect(findElements(tree, (element) => element.type === AboutModal)).toEqual([]);
+    expect(findElements(tree, (element) => element.type === SettingsModal)).toEqual([]);
 
     (compare.props.onClick as () => void)();
     (settings.props.onClick as () => void)();
