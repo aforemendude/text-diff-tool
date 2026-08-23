@@ -78,6 +78,13 @@ Regenerate the README screenshots with Playwright at a 1280×720 viewport:
 npm run screenshots
 ```
 
+A full run clears the `screenshots/` directory first. Pass an output basename or filename to recreate only that image
+without deleting the other files, for example:
+
+```bash
+npm run screenshots -- settings_modal
+```
+
 ### Build
 
 Build for production (outputs to `docs/` for GitHub Pages):

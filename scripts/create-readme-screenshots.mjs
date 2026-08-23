@@ -241,7 +241,7 @@ async function capture(page, filename) {
   console.log(`Created ${path.relative(repositoryRoot, screenshotPath)}`);
 }
 
-async function createScreenshots(page, applicationUrl) {
+async function createTextCompareScreenshot(page, applicationUrl) {
   await loadApplication(page, applicationUrl);
   await fillInputs(page, `${originalTextLines.join('\n')}\n`, modifiedTextLines.join('\n'));
   await compare(page);
@@ -252,31 +252,84 @@ async function createScreenshots(page, applicationUrl) {
     element.scrollTop = element.scrollHeight;
   });
   await capture(page, 'text_compare_mode.png');
+}
 
+async function loadJsonInputs(page, applicationUrl) {
   await loadApplication(page, applicationUrl);
   await enableJsonMode(page);
   await fillInputs(page, JSON.stringify(originalJson, null, 2), JSON.stringify(modifiedJson));
-  await capture(page, 'json_edit_mode.png');
+}
 
+async function createJsonEditScreenshot(page, applicationUrl) {
+  await loadJsonInputs(page, applicationUrl);
+  await capture(page, 'json_edit_mode.png');
+}
+
+async function createJsonCompareScreenshot(page, applicationUrl) {
+  await loadJsonInputs(page, applicationUrl);
   await compare(page);
   await requireCollapsedSections(page, 4);
   await page.locator('.compare-display__content').evaluate((element) => {
     element.scrollTop = 100;
   });
   await capture(page, 'json_compare_mode.png');
+}
 
+async function createSettingsModalScreenshot(page, applicationUrl) {
   await loadApplication(page, applicationUrl);
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByRole('dialog', { name: 'Diff settings' }).waitFor();
+  const settingsBody = page.locator('.settings-modal__body');
+  const isScrolledToBottom = await settingsBody.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    return element.scrollHeight - element.clientHeight - element.scrollTop <= 1;
+  });
+  if (!isScrolledToBottom) {
+    throw new Error('The settings modal did not scroll to the bottom.');
+  }
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
   await capture(page, 'settings_modal.png');
 }
 
+const screenshotDefinitions = [
+  { filename: 'text_compare_mode.png', create: createTextCompareScreenshot },
+  { filename: 'json_edit_mode.png', create: createJsonEditScreenshot },
+  { filename: 'json_compare_mode.png', create: createJsonCompareScreenshot },
+  { filename: 'settings_modal.png', create: createSettingsModalScreenshot },
+];
+
+function resolveScreenshotSelection() {
+  const requestedScreenshots = process.argv.slice(2);
+  if (requestedScreenshots.length === 0) {
+    return { definitions: screenshotDefinitions, shouldClearDirectory: true };
+  }
+
+  if (requestedScreenshots.length > 1) {
+    throw new Error('Expected no more than one screenshot filename or basename.');
+  }
+
+  const requestedScreenshot = requestedScreenshots[0];
+  const definition = screenshotDefinitions.find(
+    ({ filename }) => requestedScreenshot === filename || requestedScreenshot === path.parse(filename).name,
+  );
+  if (!definition) {
+    const availableScreenshots = screenshotDefinitions.map(({ filename }) => path.parse(filename).name).join(', ');
+    throw new Error(`Unknown screenshot "${requestedScreenshot}". Choose one of: ${availableScreenshots}.`);
+  }
+
+  return { definitions: [definition], shouldClearDirectory: false };
+}
+
 async function main() {
+  const { definitions, shouldClearDirectory } = resolveScreenshotSelection();
   const { isExternallyManaged, url: applicationUrl } = resolveApplicationUrl();
-  await clearScreenshotDirectory();
+  if (shouldClearDirectory) {
+    await clearScreenshotDirectory();
+  } else {
+    await mkdir(screenshotDirectory, { recursive: true });
+  }
 
   let browser;
   let serverProcess;
@@ -292,7 +345,9 @@ async function main() {
       reducedMotion: 'reduce',
     });
     const page = await context.newPage();
-    await createScreenshots(page, applicationUrl);
+    for (const definition of definitions) {
+      await definition.create(page, applicationUrl);
+    }
   } finally {
     await browser?.close();
     await stopApplication(serverProcess);
