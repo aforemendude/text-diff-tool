@@ -27,11 +27,25 @@ describe('AboutModal', () => {
       'Features',
       'Privacy',
     ]);
-    expect(findElement(tree, (element) => element.type === 'a').props).toMatchObject({
-      href: 'https://github.com/aforemendude/text-diff-tool',
-      target: '_blank',
-      rel: 'noopener noreferrer',
-      children: 'View on GitHub',
-    });
+    expect(findElements(tree, (element) => element.type === 'a').map((element) => element.props)).toEqual([
+      expect.objectContaining({
+        href: 'https://github.com/aforemendude/text-diff-tool',
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        children: 'View on GitHub',
+      }),
+      expect.objectContaining({
+        href: expect.stringMatching(/\/fonts\/inter\/OFL\.txt$/),
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        children: 'Inter license',
+      }),
+      expect.objectContaining({
+        href: expect.stringMatching(/\/fonts\/jetbrains-mono\/OFL\.txt$/),
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        children: 'JetBrains Mono license',
+      }),
+    ]);
   });
 });

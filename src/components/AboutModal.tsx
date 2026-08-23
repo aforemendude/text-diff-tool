@@ -5,6 +5,8 @@ interface AboutModalProps {
   onClose: () => void;
 }
 
+const fontLicenseBaseUrl = `${import.meta.env.BASE_URL}fonts`;
+
 function AboutModal({ onClose }: AboutModalProps) {
   return (
     <Modal
@@ -42,6 +44,16 @@ function AboutModal({ onClose }: AboutModalProps) {
         <p>
           <a href="https://github.com/aforemendude/text-diff-tool" target="_blank" rel="noopener noreferrer">
             View on GitHub
+          </a>
+        </p>
+        <p className="about-modal__font-credit">Typography: Inter and JetBrains Mono</p>
+        <p className="about-modal__font-license-links">
+          <a href={`${fontLicenseBaseUrl}/inter/OFL.txt`} target="_blank" rel="noopener noreferrer">
+            Inter license
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href={`${fontLicenseBaseUrl}/jetbrains-mono/OFL.txt`} target="_blank" rel="noopener noreferrer">
+            JetBrains Mono license
           </a>
         </p>
       </div>

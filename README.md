@@ -128,4 +128,11 @@ npm run deploy
 
 ## License and Credits
 
-See source code for license and library information.
+TextDiffTool is licensed under the [MIT License](./LICENSE).
+
+The interface uses [Inter](https://fonts.google.com/specimen/Inter), and editable and compared text uses
+[JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono). Both font families are self-hosted and licensed
+under the SIL Open Font License 1.1. The required copyright and license notices are distributed beside the font files:
+
+- [Inter license](./public/fonts/inter/OFL.txt)
+- [JetBrains Mono license](./public/fonts/jetbrains-mono/OFL.txt)
