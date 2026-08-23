@@ -63,9 +63,11 @@ describe('SettingsModal', () => {
       ariaDescribedBy: 'settings-modal-intro',
       onClose,
     });
-    expect(findElement(tree, (element) => element.props.className === 'settings-modal__intro').props.id).toBe(
-      'settings-modal-intro',
-    );
+    const intro = findElement(tree, (element) => element.props.className === 'settings-modal__intro');
+    expect(intro.props.id).toBe('settings-modal-intro');
+    expect(
+      findElement(intro, (element) => element.props.className === 'settings-modal__storage-note').props.children,
+    ).toBe('Changes are saved automatically in this browser.');
     expect(
       findElements(tree, (element) => element.type === 'fieldset').map(
         (fieldset) => fieldset.props['aria-describedby'],

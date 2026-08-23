@@ -3,6 +3,7 @@ import { findElement, findElements } from './test/reactElements';
 import type { ComputeDiffOutcome } from './diff/compute';
 import type { DiffAlgorithm, DiffCleanupMode, DiffMode, DiffResult } from './diff/types';
 import type { DiffProcess } from './diff/workerClient';
+import type { DiffSettings } from './settings';
 import App from './App';
 
 const reactMocks = vi.hoisted(() => ({ useEffect: vi.fn(), useRef: vi.fn(), useState: vi.fn() }));
@@ -100,17 +101,20 @@ function renderApp(overrides: Partial<AppState> = {}, existingProcessRef?: { cur
     activeProcess: null,
     ...overrides,
   };
+  const diffSettings: DiffSettings = {
+    diffMode: state.diffMode,
+    diffAlgorithm: state.diffAlgorithm,
+    diffCleanupMode: state.diffCleanupMode,
+    editCost: state.editCost,
+    showTextDecorations: state.showTextDecorations,
+  };
   const values = [
     state.originalText,
     state.modifiedText,
     state.diffResult,
     state.isCompareMode,
     state.isJsonMode,
-    state.diffMode,
-    state.diffAlgorithm,
-    state.diffCleanupMode,
-    state.editCost,
-    state.showTextDecorations,
+    diffSettings,
     state.modalState,
     state.isProcessing,
   ];
@@ -121,7 +125,10 @@ function renderApp(overrides: Partial<AppState> = {}, existingProcessRef?: { cur
   reactMocks.useRef.mockReturnValue(processRef);
   let effectCleanup: (() => void) | undefined;
   reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => {
-    effectCleanup = effect() ?? undefined;
+    const cleanup = effect() ?? undefined;
+    if (cleanup !== undefined) {
+      effectCleanup = cleanup;
+    }
   });
 
   return { tree: App(), setters, processRef, getEffectCleanup: () => effectCleanup };
@@ -147,15 +154,15 @@ describe('App', () => {
       isJsonMode: true,
       onJsonModeChange: setters[4],
       diffMode: 'line-grapheme',
-      onDiffModeChange: setters[5],
+      onDiffModeChange: expect.any(Function),
       diffAlgorithm: 'myers',
-      onDiffAlgorithmChange: setters[6],
+      onDiffAlgorithmChange: expect.any(Function),
       diffCleanupMode: 'none',
-      onDiffCleanupModeChange: setters[7],
+      onDiffCleanupModeChange: expect.any(Function),
       editCost: 4,
-      onEditCostChange: setters[8],
+      onEditCostChange: expect.any(Function),
       showTextDecorations: true,
-      onShowTextDecorationsChange: setters[9],
+      onShowTextDecorationsChange: expect.any(Function),
     });
     expect(textAreas.props).toMatchObject({
       originalText: 'original',
@@ -167,6 +174,38 @@ describe('App', () => {
     expect(findElements(tree, (element) => element.type === 'mock-modal')).toEqual([]);
     expect(findElements(tree, (element) => element.type === 'mock-processing-modal')).toEqual([]);
     expect(workerMocks.initializeDiffWorker).toHaveBeenCalledOnce();
+
+    (header.props['onDiffModeChange'] as (mode: DiffMode) => void)('grapheme');
+    (header.props['onDiffAlgorithmChange'] as (algorithm: DiffAlgorithm) => void)('adaptive');
+    (header.props['onDiffCleanupModeChange'] as (mode: DiffCleanupMode) => void)('efficiency');
+    (header.props['onEditCostChange'] as (cost: number) => void)(7.5);
+    (header.props['onShowTextDecorationsChange'] as (enabled: boolean) => void)(false);
+
+    let updatedSettings: DiffSettings = {
+      diffMode: 'line-grapheme',
+      diffAlgorithm: 'myers',
+      diffCleanupMode: 'none',
+      editCost: 4,
+      showTextDecorations: true,
+    };
+    const settingsSetter = setters[5];
+    if (settingsSetter === undefined) {
+      throw new Error('Expected the diff settings state setter');
+    }
+    for (const call of settingsSetter.mock.calls) {
+      const updater = call[0] as ((current: DiffSettings) => DiffSettings) | undefined;
+      if (updater === undefined) {
+        throw new Error('Expected a diff settings updater');
+      }
+      updatedSettings = updater(updatedSettings);
+    }
+    expect(updatedSettings).toEqual({
+      diffMode: 'grapheme',
+      diffAlgorithm: 'adaptive',
+      diffCleanupMode: 'efficiency',
+      editCost: 7.5,
+      showTextDecorations: false,
+    });
   });
 
   it.each<{ stateLabel: string; overrides: Partial<AppState>; expectedStatus: string }>([
@@ -212,17 +251,17 @@ describe('App', () => {
       diffCleanupMode: 'efficiency',
       editCost: 8,
     });
-    expect(setters[11]).toHaveBeenCalledExactlyOnceWith(true);
+    expect(setters[7]).toHaveBeenCalledExactlyOnceWith(true);
     expect(setters[2]).not.toHaveBeenCalled();
     expect(setters[3]).not.toHaveBeenCalled();
 
     deferred.resolve({ status: 'success', diffResult });
     await deferred.process.outcome;
 
-    expect(setters[11]).toHaveBeenLastCalledWith(false);
+    expect(setters[7]).toHaveBeenLastCalledWith(false);
     expect(setters[2]).toHaveBeenCalledExactlyOnceWith(diffResult);
     expect(setters[3]).toHaveBeenCalledExactlyOnceWith(true);
-    expect(setters[10]).not.toHaveBeenCalled();
+    expect(setters[6]).not.toHaveBeenCalled();
   });
 
   it('opens the exact informational modal and stays in edit mode for identical content', async () => {
@@ -234,7 +273,7 @@ describe('App', () => {
     deferred.resolve({ status: 'identical' });
     await deferred.process.outcome;
 
-    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[6]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: 'Identical Content',
       message: 'The original and modified content are exactly the same. There are no differences to display.',
@@ -256,7 +295,7 @@ describe('App', () => {
     deferred.resolve({ status: 'error', source, message: 'invalid JSON' });
     await deferred.process.outcome;
 
-    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[6]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: `JSON Parse Error - ${sourceLabel} Text`,
       message: `Failed to parse the ${source} text as JSON:\n\ninvalid JSON`,
@@ -281,7 +320,7 @@ describe('App', () => {
 
     expect(deferred.process.terminate).toHaveBeenCalledOnce();
     expect(processRef.current).toBeNull();
-    expect(setters[11]).toHaveBeenCalledExactlyOnceWith(false);
+    expect(setters[7]).toHaveBeenCalledExactlyOnceWith(false);
     expect(setters[2]).not.toHaveBeenCalled();
     expect(setters[3]).not.toHaveBeenCalled();
   });
@@ -333,8 +372,8 @@ describe('App', () => {
     deferred.reject(new Error('worker crashed'));
     await deferred.process.outcome.catch(() => undefined);
 
-    expect(setters[11]).toHaveBeenLastCalledWith(false);
-    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[7]).toHaveBeenLastCalledWith(false);
+    expect(setters[6]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: 'Diff Processing Error',
       message: 'Failed to compare the texts:\n\nworker crashed',
@@ -352,13 +391,13 @@ describe('App', () => {
 
     (findElement(tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
 
-    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[6]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: 'Diff Processing Error',
       message: 'Failed to compare the texts:\n\nworker unavailable',
       variant: 'error',
     });
-    expect(setters[11]).not.toHaveBeenCalled();
+    expect(setters[7]).not.toHaveBeenCalled();
     expect(setters[2]).not.toHaveBeenCalled();
     expect(setters[3]).not.toHaveBeenCalled();
   });
@@ -372,8 +411,8 @@ describe('App', () => {
     deferred.reject('unexpected failure');
     await deferred.process.outcome.catch(() => undefined);
 
-    expect(setters[11]).toHaveBeenLastCalledWith(false);
-    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[7]).toHaveBeenLastCalledWith(false);
+    expect(setters[6]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: 'Diff Processing Error',
       message: 'Failed to compare the texts:\n\nUnknown error',
@@ -414,7 +453,7 @@ describe('App', () => {
 
     expect(modal.props).toMatchObject({ title: 'Notice', message: 'Details', variant: 'info' });
     (modal.props.onClose as () => void)();
-    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[6]).toHaveBeenCalledExactlyOnceWith({
       isOpen: false,
       title: '',
       message: '',

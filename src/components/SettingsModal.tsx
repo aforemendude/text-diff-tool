@@ -153,6 +153,7 @@ function SettingsModal({
     >
       <p id="settings-modal-intro" className="settings-modal__intro">
         Choose how the next comparison is calculated and displayed.
+        <span className="settings-modal__storage-note">Changes are saved automatically in this browser.</span>
       </p>
 
       <fieldset className="settings-modal__section" aria-describedby="diff-mode-description">

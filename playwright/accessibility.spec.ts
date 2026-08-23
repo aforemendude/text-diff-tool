@@ -145,10 +145,12 @@ test.describe('Accessibility', () => {
     await expect(opener).toBeFocused();
   });
 
-  test('gives settings controls concise names, descriptions, and keyboard focus indicators', async ({ page }) => {
+  test('gives settings accessible controls and restores automatically saved choices', async ({ page }) => {
     await page.getByRole('button', { name: 'Settings' }).click();
     const dialog = page.getByRole('dialog', { name: 'Diff settings' });
-    await expect(dialog).toHaveAccessibleDescription('Choose how the next comparison is calculated and displayed.');
+    await expect(dialog).toHaveAccessibleDescription(
+      'Choose how the next comparison is calculated and displayed. Changes are saved automatically in this browser.',
+    );
 
     const selectedDiffMode = dialog.getByRole('radio', { name: /Line then grapheme/ });
     for (let attempt = 0; attempt < 6; attempt++) {
@@ -168,6 +170,21 @@ test.describe('Accessibility', () => {
     await expect(editCost).toHaveAccessibleDescription('Merge equalities shorter than this cost.');
     await editCost.focus();
     await expectVisibleFocus(editCost);
+
+    await dialog.getByText('Just grapheme', { exact: true }).click();
+    await dialog.getByText('Adaptive', { exact: true }).click();
+    await editCost.fill('7.5');
+    await dialog.getByText('Color highlights only', { exact: true }).click();
+    await dialog.getByRole('button', { name: 'Done' }).click();
+
+    await page.reload();
+    await page.getByRole('button', { name: 'Settings' }).click();
+    const restoredDialog = page.getByRole('dialog', { name: 'Diff settings' });
+    await expect(restoredDialog.getByRole('radio', { name: /Just grapheme/ })).toBeChecked();
+    await expect(restoredDialog.getByRole('radio', { name: /Adaptive/ })).toBeChecked();
+    await expect(restoredDialog.getByRole('radio', { name: /Efficiency Cleanup/ })).toBeChecked();
+    await expect(restoredDialog.getByRole('spinbutton', { name: 'Edit cost', exact: true })).toHaveValue('7.5');
+    await expect(restoredDialog.getByRole('radio', { name: /Color highlights only/ })).toBeChecked();
   });
 
   test('exposes comparison structure, line changes, and keyboard disclosure controls', async ({ page }) => {

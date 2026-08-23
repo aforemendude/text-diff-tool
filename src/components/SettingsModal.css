@@ -16,6 +16,14 @@
   font-size: 0.825rem;
 }
 
+.settings-modal__storage-note {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .settings-modal__section {
   min-width: 0;
   margin: 0;

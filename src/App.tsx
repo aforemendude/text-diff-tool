@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Header, TextAreas, CompareDisplay, Modal, ProcessingModal } from './components';
 import type { ComputeDiffOutcome } from './diff/compute';
-import type { DiffAlgorithm, DiffCleanupMode, DiffMode, DiffResult } from './diff/types';
+import type { DiffResult } from './diff/types';
 import { initializeDiffWorker, startDiffProcess, type DiffProcess } from './diff/workerClient';
+import { loadDiffSettings, saveDiffSettings, type DiffSettings } from './settings';
 import './App.css';
 
 interface ModalState {
@@ -25,14 +26,11 @@ function App() {
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [isJsonMode, setIsJsonMode] = useState(false);
-  const [diffMode, setDiffMode] = useState<DiffMode>('line-grapheme');
-  const [diffAlgorithm, setDiffAlgorithm] = useState<DiffAlgorithm>('myers');
-  const [diffCleanupMode, setDiffCleanupMode] = useState<DiffCleanupMode>('none');
-  const [editCost, setEditCost] = useState(4);
-  const [showTextDecorations, setShowTextDecorations] = useState(true);
+  const [diffSettings, setDiffSettings] = useState<DiffSettings>(loadDiffSettings);
   const [modalState, setModalState] = useState<ModalState>(closedModalState);
   const [isProcessing, setIsProcessing] = useState(false);
   const diffProcessRef = useRef<DiffProcess | null>(null);
+  const { diffMode, diffAlgorithm, diffCleanupMode, editCost, showTextDecorations } = diffSettings;
 
   useEffect(() => {
     initializeDiffWorker();
@@ -43,6 +41,16 @@ function App() {
       activeProcess?.terminate();
     };
   }, []);
+
+  useEffect(() => {
+    saveDiffSettings(diffSettings);
+  }, [diffSettings]);
+
+  function updateDiffSetting<Key extends keyof DiffSettings>(key: Key, value: DiffSettings[Key]) {
+    setDiffSettings((currentSettings) =>
+      currentSettings[key] === value ? currentSettings : { ...currentSettings, [key]: value },
+    );
+  }
 
   const closeModal = () => {
     setModalState(closedModalState);
@@ -148,15 +156,15 @@ function App() {
         isJsonMode={isJsonMode}
         onJsonModeChange={setIsJsonMode}
         diffMode={diffMode}
-        onDiffModeChange={setDiffMode}
+        onDiffModeChange={(mode) => updateDiffSetting('diffMode', mode)}
         diffAlgorithm={diffAlgorithm}
-        onDiffAlgorithmChange={setDiffAlgorithm}
+        onDiffAlgorithmChange={(algorithm) => updateDiffSetting('diffAlgorithm', algorithm)}
         diffCleanupMode={diffCleanupMode}
-        onDiffCleanupModeChange={setDiffCleanupMode}
+        onDiffCleanupModeChange={(mode) => updateDiffSetting('diffCleanupMode', mode)}
         editCost={editCost}
-        onEditCostChange={setEditCost}
+        onEditCostChange={(cost) => updateDiffSetting('editCost', cost)}
         showTextDecorations={showTextDecorations}
-        onShowTextDecorationsChange={setShowTextDecorations}
+        onShowTextDecorationsChange={(enabled) => updateDiffSetting('showTextDecorations', enabled)}
       />
       <p className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
         {isProcessing ? 'Comparison in progress.' : isCompareMode ? 'Comparison complete. Results are ready.' : ''}
