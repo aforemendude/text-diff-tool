@@ -40,6 +40,10 @@ test.describe('Diff processing', () => {
           state.createCount += 1;
         }
 
+        addEventListener() {
+          // Vite listens for worker startup errors so it can revoke the inline worker's blob URL.
+        }
+
         postMessage() {
           state.postMessageCount += 1;
         }
