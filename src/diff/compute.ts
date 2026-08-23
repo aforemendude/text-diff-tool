@@ -22,10 +22,11 @@ interface GraphemeLineBuilder {
   lineNumber: number;
   contentParts: string[];
   charDiffs: CharDiff[];
+  separateNextCharDiff: boolean;
   matchWeights: Map<number, number>;
 }
 
-interface GraphemeLine extends Omit<GraphemeLineBuilder, 'contentParts'> {
+interface GraphemeLine extends Omit<GraphemeLineBuilder, 'contentParts' | 'separateNextCharDiff'> {
   content: string;
 }
 
@@ -172,11 +173,12 @@ function computeLineGraphemeDiff(
 function appendCharacterDiff(builder: GraphemeLineBuilder, type: CharDiff['type'], text: string): void {
   builder.contentParts.push(text);
   const previous = builder.charDiffs.at(-1);
-  if (previous?.type === type) {
+  if (!builder.separateNextCharDiff && previous?.type === type) {
     previous.text += text;
   } else {
     builder.charDiffs.push({ type, text });
   }
+  builder.separateNextCharDiff = false;
 }
 
 function finishGraphemeLine(builder: GraphemeLineBuilder): GraphemeLine {
@@ -337,6 +339,7 @@ function computeGraphemeDiff(
     lineNumber,
     contentParts: [],
     charDiffs: [],
+    separateNextCharDiff: false,
     matchWeights: new Map(),
   });
   let originalBuilder = createBuilder(nextOriginalLineNumber);
@@ -376,6 +379,7 @@ function computeGraphemeDiff(
           appendCharacterDiff(modifiedBuilder, 'equal', token);
         }
       } else if (operation === DELETE) {
+        modifiedBuilder.separateNextCharDiff = true;
         if (isLineBreak(token)) {
           finishOriginalLine();
         } else {

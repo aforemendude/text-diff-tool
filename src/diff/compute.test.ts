@@ -427,6 +427,26 @@ describe('computeDiff', () => {
     ]);
   });
 
+  it('preserves the modified-side equality boundary for deletion markers in grapheme mode', () => {
+    const result = getDiffResult(
+      computeDiff('abXcd', 'abcd', {
+        ...options,
+        diffMode: 'grapheme',
+        diffCleanupMode: 'none',
+      }),
+    );
+
+    expect(getLine(result.originalLines, 0).charDiffs).toEqual([
+      { type: 'equal', text: 'ab' },
+      { type: 'delete', text: 'X' },
+      { type: 'equal', text: 'cd' },
+    ]);
+    expect(getLine(result.modifiedLines, 0).charDiffs).toEqual([
+      { type: 'equal', text: 'ab' },
+      { type: 'equal', text: 'cd' },
+    ]);
+  });
+
   it.each(['myers', 'adaptive'] as const)('supports the selectable %s algorithm in both diff modes', (algorithm) => {
     for (const diffMode of ['line-grapheme', 'grapheme'] as const) {
       const result = getDiffResult(
