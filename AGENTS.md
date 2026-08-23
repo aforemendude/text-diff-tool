@@ -11,6 +11,8 @@
 
 - Do not build or otherwise regenerate `docs/` unless the user explicitly asks. In particular, do not run
   `npm run build` or `npm run deploy` as routine validation.
+- Do not regenerate the files in `screenshots/` unless the user explicitly asks. In particular, do not run
+  `npm run screenshots` as routine validation.
 
 ## Tests and development servers
 

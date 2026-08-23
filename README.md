@@ -3,15 +3,17 @@
 A modern, browser-based text comparison tool that highlights differences between two text inputs with line-level and
 character-level diff visualization.
 
-![Text Compare Mode](/screenshots/text_compare_mode.png)
+![Text Compare Mode](./screenshots/text_compare_mode.png)
 
 <details>
 
 <summary>More Screenshots</summary>
 
-![JSON Edit Mode](/screenshots/json_edit_mode.png)
+![JSON Edit Mode](./screenshots/json_edit_mode.png)
 
-![JSON Compare Mode](/screenshots/json_compare_mode.png)
+![JSON Compare Mode](./screenshots/json_compare_mode.png)
+
+![Settings Modal](./screenshots/settings_modal.png)
 
 </details>
 
@@ -68,6 +70,12 @@ Start the development server:
 
 ```bash
 npm run dev
+```
+
+Regenerate the README screenshots with Playwright at a 1280×720 viewport:
+
+```bash
+npm run screenshots
 ```
 
 ### Build

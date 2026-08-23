@@ -33,6 +33,7 @@
     "playwright:install": "playwright install",
     "playwright:install-deps": "playwright install-deps",
     "preview": "vite preview",
+    "screenshots": "node scripts/create-readme-screenshots.mjs",
     "test": "vitest run",
     "verify": "prettier --check . && npm run test && npm run integration"
   },
