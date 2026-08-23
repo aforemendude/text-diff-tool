@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import './Header.css';
 import AboutModal from './AboutModal';
 import SettingsModal from './SettingsModal';
 import type { DiffAlgorithm, DiffCleanupMode, DiffMode } from '../diff/types';
+import './Header.css';
 
 interface HeaderProps {
   isCompareMode: boolean;

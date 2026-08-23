@@ -1,6 +1,6 @@
 import { useState, ReactElement } from 'react';
-import './CompareDisplay.css';
 import type { CharDiff as CharDiffValue, DiffResult, LineDiff } from '../diff/types';
+import './CompareDisplay.css';
 
 interface CompareDisplayProps {
   diffResult: DiffResult | null;

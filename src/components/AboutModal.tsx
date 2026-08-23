@@ -1,5 +1,5 @@
-import './AboutModal.css';
 import Modal from './Modal';
+import './AboutModal.css';
 
 interface AboutModalProps {
   onClose: () => void;

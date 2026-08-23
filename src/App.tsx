@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import './App.css';
 import { Header, TextAreas, CompareDisplay, Modal, ProcessingModal } from './components';
 import type { ComputeDiffOutcome } from './diff/compute';
 import type { DiffAlgorithm, DiffCleanupMode, DiffMode, DiffResult } from './diff/types';
 import { initializeDiffWorker, startDiffProcess, type DiffProcess } from './diff/workerClient';
+import './App.css';
 
 interface ModalState {
   isOpen: boolean;
