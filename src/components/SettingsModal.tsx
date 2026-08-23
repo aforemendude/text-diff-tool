@@ -13,6 +13,8 @@ interface SettingsModalProps {
   onDiffCleanupModeChange: (mode: DiffCleanupMode) => void;
   editCost: number;
   onEditCostChange: (cost: number) => void;
+  showTextDecorations: boolean;
+  onShowTextDecorationsChange: (enabled: boolean) => void;
 }
 
 interface SettingOption<Value extends string> {
@@ -69,6 +71,20 @@ const cleanupModes: SettingOption<DiffCleanupMode>[] = [
   },
 ];
 
+const textDecorationModes: SettingOption<'enabled' | 'disabled'>[] = [
+  {
+    value: 'enabled',
+    label: 'Text decorations',
+    description: 'Strike through deletions and double-underline insertions so changes do not rely on color alone.',
+    isDefault: true,
+  },
+  {
+    value: 'disabled',
+    label: 'Color highlights only',
+    description: 'Remove text decorations; changed ranges may be harder to distinguish without color.',
+  },
+];
+
 function renderOption<Value extends string>(
   option: SettingOption<Value>,
   groupName: string,
@@ -113,6 +129,8 @@ function SettingsModal({
   onDiffCleanupModeChange,
   editCost,
   onEditCostChange,
+  showTextDecorations,
+  onShowTextDecorationsChange,
 }: SettingsModalProps) {
   const handleEditCostChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number.parseFloat(event.target.value);
@@ -134,7 +152,7 @@ function SettingsModal({
       ariaDescribedBy="settings-modal-intro"
     >
       <p id="settings-modal-intro" className="settings-modal__intro">
-        Choose how the next comparison is calculated.
+        Choose how the next comparison is calculated and displayed.
       </p>
 
       <fieldset className="settings-modal__section" aria-describedby="diff-mode-description">
@@ -194,6 +212,20 @@ function SettingsModal({
             aria-describedby="edit-cost-description"
             disabled={diffCleanupMode !== 'efficiency'}
           />
+        </div>
+      </fieldset>
+
+      <fieldset className="settings-modal__section" aria-describedby="change-highlights-description">
+        <legend className="settings-modal__section-title">Change highlights</legend>
+        <p id="change-highlights-description" className="settings-modal__section-description">
+          Choose how added and removed character ranges are marked.
+        </p>
+        <div className="settings-modal__options settings-modal__options--two-column">
+          {textDecorationModes.map((mode) =>
+            renderOption(mode, 'textDecorations', showTextDecorations ? 'enabled' : 'disabled', (value) =>
+              onShowTextDecorationsChange(value === 'enabled'),
+            ),
+          )}
         </div>
       </fieldset>
     </Modal>

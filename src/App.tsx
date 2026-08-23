@@ -29,6 +29,7 @@ function App() {
   const [diffAlgorithm, setDiffAlgorithm] = useState<DiffAlgorithm>('myers');
   const [diffCleanupMode, setDiffCleanupMode] = useState<DiffCleanupMode>('none');
   const [editCost, setEditCost] = useState(4);
+  const [showTextDecorations, setShowTextDecorations] = useState(true);
   const [modalState, setModalState] = useState<ModalState>(closedModalState);
   const [isProcessing, setIsProcessing] = useState(false);
   const diffProcessRef = useRef<DiffProcess | null>(null);
@@ -154,6 +155,8 @@ function App() {
         onDiffCleanupModeChange={setDiffCleanupMode}
         editCost={editCost}
         onEditCostChange={setEditCost}
+        showTextDecorations={showTextDecorations}
+        onShowTextDecorationsChange={setShowTextDecorations}
       />
       <p className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
         {isProcessing ? 'Comparison in progress.' : isCompareMode ? 'Comparison complete. Results are ready.' : ''}
@@ -166,7 +169,7 @@ function App() {
           onModifiedChange={setModifiedText}
         />
       )}
-      {isCompareMode && <CompareDisplay diffResult={diffResult} />}
+      {isCompareMode && <CompareDisplay diffResult={diffResult} showTextDecorations={showTextDecorations} />}
       {isProcessing ? (
         <ProcessingModal onTerminate={terminateDiffProcess} />
       ) : modalState.isOpen ? (

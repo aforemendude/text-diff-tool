@@ -147,7 +147,7 @@ test.describe('Accessibility', () => {
   test('gives settings controls concise names, descriptions, and keyboard focus indicators', async ({ page }) => {
     await page.getByRole('button', { name: 'Settings' }).click();
     const dialog = page.getByRole('dialog', { name: 'Diff settings' });
-    await expect(dialog).toHaveAccessibleDescription('Choose how the next comparison is calculated.');
+    await expect(dialog).toHaveAccessibleDescription('Choose how the next comparison is calculated and displayed.');
 
     const selectedDiffMode = dialog.getByRole('radio', { name: /Line then grapheme/ });
     for (let attempt = 0; attempt < 6; attempt++) {

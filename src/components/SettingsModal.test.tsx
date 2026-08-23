@@ -8,12 +8,14 @@ interface SettingsSelection {
   diffMode: DiffMode;
   diffAlgorithm: DiffAlgorithm;
   diffCleanupMode: DiffCleanupMode;
+  showTextDecorations: boolean;
 }
 
 const defaultSelection: SettingsSelection = {
   diffMode: 'line-grapheme',
   diffAlgorithm: 'myers',
   diffCleanupMode: 'none',
+  showTextDecorations: true,
 };
 
 function renderSettings(selection: Partial<SettingsSelection> = {}, editCost = 4) {
@@ -22,6 +24,7 @@ function renderSettings(selection: Partial<SettingsSelection> = {}, editCost = 4
   const onDiffAlgorithmChange = vi.fn();
   const onDiffCleanupModeChange = vi.fn();
   const onEditCostChange = vi.fn();
+  const onShowTextDecorationsChange = vi.fn();
   const selected = { ...defaultSelection, ...selection };
   const tree = SettingsModal({
     onClose,
@@ -31,6 +34,7 @@ function renderSettings(selection: Partial<SettingsSelection> = {}, editCost = 4
     onDiffCleanupModeChange,
     editCost,
     onEditCostChange,
+    onShowTextDecorationsChange,
   });
   return {
     tree,
@@ -39,6 +43,7 @@ function renderSettings(selection: Partial<SettingsSelection> = {}, editCost = 4
     onDiffAlgorithmChange,
     onDiffCleanupModeChange,
     onEditCostChange,
+    onShowTextDecorationsChange,
   };
 }
 
@@ -65,12 +70,22 @@ describe('SettingsModal', () => {
       findElements(tree, (element) => element.type === 'fieldset').map(
         (fieldset) => fieldset.props['aria-describedby'],
       ),
-    ).toEqual(['diff-mode-description', 'algorithm-description', 'cleanup-description']);
+    ).toEqual([
+      'diff-mode-description',
+      'algorithm-description',
+      'cleanup-description',
+      'change-highlights-description',
+    ]);
     expect(
       findElements(tree, (element) => element.props.className === 'settings-modal__section-description').map(
         (description) => description.props.id,
       ),
-    ).toEqual(['diff-mode-description', 'algorithm-description', 'cleanup-description']);
+    ).toEqual([
+      'diff-mode-description',
+      'algorithm-description',
+      'cleanup-description',
+      'change-highlights-description',
+    ]);
     expect(
       radios.map((radio) => ({
         value: radio.props.value,
@@ -85,13 +100,15 @@ describe('SettingsModal', () => {
       { value: 'none', name: 'diffCleanupMode', checked: true },
       { value: 'semantic', name: 'diffCleanupMode', checked: false },
       { value: 'efficiency', name: 'diffCleanupMode', checked: false },
+      { value: 'enabled', name: 'textDecorations', checked: true },
+      { value: 'disabled', name: 'textDecorations', checked: false },
     ]);
-    expect(defaultBadges.map((badge) => badge.props.children)).toEqual(['Default', 'Default', 'Default']);
+    expect(defaultBadges.map((badge) => badge.props.children)).toEqual(['Default', 'Default', 'Default', 'Default']);
     expect(
       findElements(tree, (element) => element.props.className === 'settings-modal__option-indicator').map(
         (indicator) => indicator.props['aria-hidden'],
       ),
-    ).toEqual(['true', 'true', 'true', 'true', 'true', 'true', 'true']);
+    ).toEqual(['true', 'true', 'true', 'true', 'true', 'true', 'true', 'true', 'true']);
   });
 
   it('marks only the current option in each group as selected', () => {
@@ -99,6 +116,7 @@ describe('SettingsModal', () => {
       diffMode: 'grapheme',
       diffAlgorithm: 'adaptive',
       diffCleanupMode: 'semantic',
+      showTextDecorations: false,
     });
     const radios = findElements(tree, (element) => element.type === 'input' && element.props.type === 'radio');
     const selectedValues = radios.filter((radio) => radio.props.checked).map((radio) => radio.props.value);
@@ -107,12 +125,12 @@ describe('SettingsModal', () => {
       (element) => element.type === 'label' && String(element.props.className).startsWith('settings-modal__option'),
     );
 
-    expect(selectedValues).toEqual(['grapheme', 'adaptive', 'semantic']);
-    expect(optionLabels.filter((label) => String(label.props.className).includes('--selected'))).toHaveLength(3);
+    expect(selectedValues).toEqual(['grapheme', 'adaptive', 'semantic', 'disabled']);
+    expect(optionLabels.filter((label) => String(label.props.className).includes('--selected'))).toHaveLength(4);
     expect(findElement(tree, (element) => element.props.id === 'edit-cost').props.disabled).toBe(true);
   });
 
-  it('reports every diff mode, algorithm, and cleanup selection through its matching callback', () => {
+  it('reports every setting selection through its matching callback', () => {
     const rendered = renderSettings();
     const radios = findElements(rendered.tree, (element) => element.type === 'input' && element.props.type === 'radio');
 
@@ -123,6 +141,7 @@ describe('SettingsModal', () => {
     expect(rendered.onDiffModeChange.mock.calls).toEqual([['line-grapheme'], ['grapheme']]);
     expect(rendered.onDiffAlgorithmChange.mock.calls).toEqual([['myers'], ['adaptive']]);
     expect(rendered.onDiffCleanupModeChange.mock.calls).toEqual([['none'], ['semantic'], ['efficiency']]);
+    expect(rendered.onShowTextDecorationsChange.mock.calls).toEqual([[true], [false]]);
   });
 
   it('enables edit cost only for efficiency cleanup and validates non-negative values', () => {

@@ -33,6 +33,8 @@ function defaultProps() {
     onDiffCleanupModeChange: vi.fn(),
     editCost: 4,
     onEditCostChange: vi.fn(),
+    showTextDecorations: true,
+    onShowTextDecorationsChange: vi.fn(),
   };
 }
 
@@ -99,6 +101,8 @@ describe('Header', () => {
       onDiffCleanupModeChange: props.onDiffCleanupModeChange,
       editCost: 4,
       onEditCostChange: props.onEditCostChange,
+      showTextDecorations: true,
+      onShowTextDecorationsChange: props.onShowTextDecorationsChange,
     });
 
     (about.props.onClose as () => void)();

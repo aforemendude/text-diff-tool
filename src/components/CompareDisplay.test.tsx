@@ -171,6 +171,37 @@ describe('CompareDisplay', () => {
     expect(markup.match(/class="visually-hidden">Changed line\. <\/span>/g)).toHaveLength(2);
   });
 
+  it('can disable visual text decorations without removing insertion and deletion semantics', () => {
+    const markup = renderToStaticMarkup(
+      <CompareDisplay
+        diffResult={result(
+          [
+            {
+              lineNumber: 1,
+              type: 'modify',
+              content: 'old',
+              charDiffs: [{ type: 'delete', text: 'old' }],
+            },
+          ],
+          [
+            {
+              lineNumber: 1,
+              type: 'modify',
+              content: 'new',
+              charDiffs: [{ type: 'insert', text: 'new' }],
+            },
+          ],
+        )}
+        showTextDecorations={false}
+      />,
+    );
+
+    expect(markup).toContain('<main class="compare-display" aria-label="Comparison results">');
+    expect(markup).not.toContain('compare-display--text-decorations');
+    expect(markup).toContain('<del class="char-diff char-diff--delete"');
+    expect(markup).toContain('<ins class="char-diff char-diff--insert"');
+  });
+
   it('exposes the comparison as a labelled table with column headers, rows, and cells', () => {
     const markup = renderToStaticMarkup(
       <CompareDisplay
@@ -181,7 +212,9 @@ describe('CompareDisplay', () => {
       />,
     );
 
-    expect(markup).toContain('<main class="compare-display" aria-label="Comparison results">');
+    expect(markup).toContain(
+      '<main class="compare-display compare-display--text-decorations" aria-label="Comparison results">',
+    );
     expect(markup).toContain(
       '<div class="compare-display__table" role="table" aria-label="Original and modified text comparison">',
     );

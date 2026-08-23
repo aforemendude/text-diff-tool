@@ -38,6 +38,7 @@ interface AppState {
   diffAlgorithm: DiffAlgorithm;
   diffCleanupMode: DiffCleanupMode;
   editCost: number;
+  showTextDecorations: boolean;
   modalState: {
     isOpen: boolean;
     title: string;
@@ -93,6 +94,7 @@ function renderApp(overrides: Partial<AppState> = {}, existingProcessRef?: { cur
     diffAlgorithm: 'myers',
     diffCleanupMode: 'none',
     editCost: 4,
+    showTextDecorations: true,
     modalState: { isOpen: false, title: '', message: '', variant: 'error' },
     isProcessing: false,
     activeProcess: null,
@@ -108,6 +110,7 @@ function renderApp(overrides: Partial<AppState> = {}, existingProcessRef?: { cur
     state.diffAlgorithm,
     state.diffCleanupMode,
     state.editCost,
+    state.showTextDecorations,
     state.modalState,
     state.isProcessing,
   ];
@@ -151,6 +154,8 @@ describe('App', () => {
       onDiffCleanupModeChange: setters[7],
       editCost: 4,
       onEditCostChange: setters[8],
+      showTextDecorations: true,
+      onShowTextDecorationsChange: setters[9],
     });
     expect(textAreas.props).toMatchObject({
       originalText: 'original',
@@ -207,17 +212,17 @@ describe('App', () => {
       diffCleanupMode: 'efficiency',
       editCost: 8,
     });
-    expect(setters[10]).toHaveBeenCalledExactlyOnceWith(true);
+    expect(setters[11]).toHaveBeenCalledExactlyOnceWith(true);
     expect(setters[2]).not.toHaveBeenCalled();
     expect(setters[3]).not.toHaveBeenCalled();
 
     deferred.resolve({ status: 'success', diffResult });
     await deferred.process.outcome;
 
-    expect(setters[10]).toHaveBeenLastCalledWith(false);
+    expect(setters[11]).toHaveBeenLastCalledWith(false);
     expect(setters[2]).toHaveBeenCalledExactlyOnceWith(diffResult);
     expect(setters[3]).toHaveBeenCalledExactlyOnceWith(true);
-    expect(setters[9]).not.toHaveBeenCalled();
+    expect(setters[10]).not.toHaveBeenCalled();
   });
 
   it('opens the exact informational modal and stays in edit mode for identical content', async () => {
@@ -229,7 +234,7 @@ describe('App', () => {
     deferred.resolve({ status: 'identical' });
     await deferred.process.outcome;
 
-    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: 'Identical Content',
       message: 'The original and modified content are exactly the same. There are no differences to display.',
@@ -251,7 +256,7 @@ describe('App', () => {
     deferred.resolve({ status: 'error', source, message: 'invalid JSON' });
     await deferred.process.outcome;
 
-    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: `JSON Parse Error - ${sourceLabel} Text`,
       message: `Failed to parse the ${source} text as JSON:\n\ninvalid JSON`,
@@ -276,7 +281,7 @@ describe('App', () => {
 
     expect(deferred.process.terminate).toHaveBeenCalledOnce();
     expect(processRef.current).toBeNull();
-    expect(setters[10]).toHaveBeenCalledExactlyOnceWith(false);
+    expect(setters[11]).toHaveBeenCalledExactlyOnceWith(false);
     expect(setters[2]).not.toHaveBeenCalled();
     expect(setters[3]).not.toHaveBeenCalled();
   });
@@ -328,8 +333,8 @@ describe('App', () => {
     deferred.reject(new Error('worker crashed'));
     await deferred.process.outcome.catch(() => undefined);
 
-    expect(setters[10]).toHaveBeenLastCalledWith(false);
-    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[11]).toHaveBeenLastCalledWith(false);
+    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: 'Diff Processing Error',
       message: 'Failed to compare the texts:\n\nworker crashed',
@@ -347,13 +352,13 @@ describe('App', () => {
 
     (findElement(tree, (element) => element.type === 'mock-header').props.onToggleMode as () => void)();
 
-    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: 'Diff Processing Error',
       message: 'Failed to compare the texts:\n\nworker unavailable',
       variant: 'error',
     });
-    expect(setters[10]).not.toHaveBeenCalled();
+    expect(setters[11]).not.toHaveBeenCalled();
     expect(setters[2]).not.toHaveBeenCalled();
     expect(setters[3]).not.toHaveBeenCalled();
   });
@@ -367,8 +372,8 @@ describe('App', () => {
     deferred.reject('unexpected failure');
     await deferred.process.outcome.catch(() => undefined);
 
-    expect(setters[10]).toHaveBeenLastCalledWith(false);
-    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[11]).toHaveBeenLastCalledWith(false);
+    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
       isOpen: true,
       title: 'Diff Processing Error',
       message: 'Failed to compare the texts:\n\nUnknown error',
@@ -388,10 +393,11 @@ describe('App', () => {
   });
 
   it('renders the current diff and clears it when returning to edit mode', () => {
-    const { tree, setters } = renderApp({ diffResult, isCompareMode: true });
+    const { tree, setters } = renderApp({ diffResult, isCompareMode: true, showTextDecorations: false });
     const header = findElement(tree, (element) => element.type === 'mock-header');
+    const compareDisplay = findElement(tree, (element) => element.type === 'mock-compare-display');
 
-    expect(findElement(tree, (element) => element.type === 'mock-compare-display').props.diffResult).toBe(diffResult);
+    expect(compareDisplay.props).toMatchObject({ diffResult, showTextDecorations: false });
     expect(findElements(tree, (element) => element.type === 'mock-text-areas')).toEqual([]);
 
     (header.props.onToggleMode as () => void)();
@@ -408,7 +414,7 @@ describe('App', () => {
 
     expect(modal.props).toMatchObject({ title: 'Notice', message: 'Details', variant: 'info' });
     (modal.props.onClose as () => void)();
-    expect(setters[9]).toHaveBeenCalledExactlyOnceWith({
+    expect(setters[10]).toHaveBeenCalledExactlyOnceWith({
       isOpen: false,
       title: '',
       message: '',

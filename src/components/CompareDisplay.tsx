@@ -4,6 +4,7 @@ import './CompareDisplay.css';
 
 interface CompareDisplayProps {
   diffResult: DiffResult | null;
+  showTextDecorations?: boolean;
 }
 
 const CONTEXT_LINES = 3; // Number of unchanged lines to show around changes
@@ -21,7 +22,7 @@ type DisplaySection =
       lineCount: number;
     };
 
-function CompareDisplay({ diffResult }: CompareDisplayProps) {
+function CompareDisplay({ diffResult, showTextDecorations = true }: CompareDisplayProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   if (!diffResult) {
@@ -112,7 +113,10 @@ function CompareDisplay({ diffResult }: CompareDisplayProps) {
   };
 
   return (
-    <main className="compare-display" aria-label="Comparison results">
+    <main
+      className={showTextDecorations ? 'compare-display compare-display--text-decorations' : 'compare-display'}
+      aria-label="Comparison results"
+    >
       <div className="compare-display__table" role="table" aria-label="Original and modified text comparison">
         <div className="compare-display__header" role="row">
           <div className="compare-display__header-cell" role="columnheader" aria-colindex={1}>

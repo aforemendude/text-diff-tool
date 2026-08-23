@@ -18,6 +18,8 @@ interface HeaderProps {
   onDiffCleanupModeChange: (mode: DiffCleanupMode) => void;
   editCost: number;
   onEditCostChange: (cost: number) => void;
+  showTextDecorations: boolean;
+  onShowTextDecorationsChange: (enabled: boolean) => void;
 }
 
 function Header({
@@ -33,6 +35,8 @@ function Header({
   onDiffCleanupModeChange,
   editCost,
   onEditCostChange,
+  showTextDecorations,
+  onShowTextDecorationsChange,
 }: HeaderProps) {
   const [showAbout, setShowAbout] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -112,6 +116,8 @@ function Header({
           onDiffCleanupModeChange={onDiffCleanupModeChange}
           editCost={editCost}
           onEditCostChange={onEditCostChange}
+          showTextDecorations={showTextDecorations}
+          onShowTextDecorationsChange={onShowTextDecorationsChange}
         />
       )}
     </>

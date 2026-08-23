@@ -142,6 +142,10 @@
 .char-diff--delete {
   background-color: #ffc0c0;
   border-radius: 2px;
+  text-decoration-line: none;
+}
+
+.compare-display--text-decorations .char-diff--delete {
   text-decoration-line: line-through;
   text-decoration-color: #8c1d18;
 }
@@ -149,6 +153,10 @@
 .char-diff--insert {
   background-color: #a6f1a6;
   border-radius: 2px;
+  text-decoration-line: none;
+}
+
+.compare-display--text-decorations .char-diff--insert {
   text-decoration-line: underline;
   text-decoration-style: double;
   text-decoration-color: #096b2e;
