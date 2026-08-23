@@ -105,6 +105,19 @@ describe('SettingsModal', () => {
     ]);
     expect(defaultBadges.map((badge) => badge.props.children)).toEqual(['Default', 'Default', 'Default', 'Default']);
     expect(
+      findElements(tree, (element) => element.props.className === 'settings-modal__option-label')
+        .slice(-2)
+        .map((label) => label.props.children),
+    ).toEqual(['Color and text decorations', 'Color highlights only']);
+    expect(
+      findElements(tree, (element) => element.props.className === 'settings-modal__option-description')
+        .slice(-2)
+        .map((description) => description.props.children),
+    ).toEqual([
+      'Use color highlights with strikethrough for deletions and double underlines for insertions.',
+      'Use color highlights without strikethrough or underlines; ranges may be harder to distinguish.',
+    ]);
+    expect(
       findElements(tree, (element) => element.props.className === 'settings-modal__option-indicator').map(
         (indicator) => indicator.props['aria-hidden'],
       ),

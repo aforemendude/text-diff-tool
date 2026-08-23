@@ -74,14 +74,14 @@ const cleanupModes: SettingOption<DiffCleanupMode>[] = [
 const textDecorationModes: SettingOption<'enabled' | 'disabled'>[] = [
   {
     value: 'enabled',
-    label: 'Text decorations',
-    description: 'Strike through deletions and double-underline insertions so changes do not rely on color alone.',
+    label: 'Color and text decorations',
+    description: 'Use color highlights with strikethrough for deletions and double underlines for insertions.',
     isDefault: true,
   },
   {
     value: 'disabled',
     label: 'Color highlights only',
-    description: 'Remove text decorations; changed ranges may be harder to distinguish without color.',
+    description: 'Use color highlights without strikethrough or underlines; ranges may be harder to distinguish.',
   },
 ];
 
