@@ -17,22 +17,25 @@ show one fully modified line.
 ## JSON normalization and safety
 
 Turn on **JSON Mode**. This pair covers formatting and key-order normalization, nested arrays and objects, duplicate
-keys, exact unsafe integers, primitive values, and prototype-like property names.
+keys, exact unsafe integers, primitive values, prototype-like property names, and the boundary markers for text that
+exists on only one side.
 
 Original:
 
 ```text
-{"z":null,"large":9007199254740993,"dup":1,"dup":2,"data":[true,{"__proto__":1}],"constructor":{"prototype":2}}
+{"z":null,"large":9007199254740993,"dup":1,"dup":2,"data":[true,{"__proto__":1}],"constructor":{"prototype":2},"deleteMarker":"beforeDELETEafter","insertMarker":"beforeafter"}
 ```
 
 Modified:
 
 ```text
-{ "constructor": { "prototype": 2 }, "data": [true, { "__proto__": 1 }], "dup": 1, "dup": 3, "large": 9007199254740995, "z": null }
+{ "constructor": { "prototype": 2 }, "data": [true, { "__proto__": 1 }], "deleteMarker": "beforeafter", "dup": 1, "dup": 3, "insertMarker": "beforeINSERTafter", "large": 9007199254740995, "z": null }
 ```
 
-Expect sorted, consistently formatted output with both `dup` entries and both large integers preserved exactly. Only the
-second duplicate value and the large integer should differ; comparison must not error or mutate global prototypes.
+Expect sorted, consistently formatted output with both `dup` entries and both large integers preserved exactly. Along
+with the changed second duplicate value and large integer, `DELETE` should appear as deleted text with a deletion marker
+on the Modified side, while `INSERT` should appear as inserted text with an insertion marker on the Original side.
+Comparison must not error or mutate global prototypes.
 
 ## Reflowed text
 
