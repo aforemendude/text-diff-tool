@@ -57,6 +57,67 @@ across the narrow comparison pane. Only the line break moves; the wording stays 
 produces much broader line-level changes. The first Original line is also long enough to exercise visual wrapping in a
 narrow pane.
 
+## Collapsed ranges
+
+Leave the default settings selected and compare this pair. The only change is on line 11, leaving enough unchanged lines
+on both sides to create two collapsed ranges.
+
+Original:
+
+```text
+Line 1
+Line 2
+Line 3
+Line 4
+Line 5
+Line 6
+Line 7
+Line 8
+Line 9
+Line 10
+Original line 11
+Line 12
+Line 13
+Line 14
+Line 15
+Line 16
+Line 17
+Line 18
+Line 19
+Line 20
+Line 21
+```
+
+Modified:
+
+```text
+Line 1
+Line 2
+Line 3
+Line 4
+Line 5
+Line 6
+Line 7
+Line 8
+Line 9
+Line 10
+Modified line 11
+Line 12
+Line 13
+Line 14
+Line 15
+Line 16
+Line 17
+Line 18
+Line 19
+Line 20
+Line 21
+```
+
+Expect lines 8 through 14 to remain visible around the change, with a **7 unchanged lines hidden** control both before
+and after them. Expand each range independently and confirm that its seven lines appear with matching line numbers, the
+control changes to **Collapse 7 unchanged lines**, and collapsing it hides those lines again.
+
 ## Final newline states
 
 Paste these one-line payloads, then remove any trailing line break introduced by copy and paste.
